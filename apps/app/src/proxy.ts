@@ -25,12 +25,12 @@ function isPublicRoute(pathname: string) {
 }
 
 export async function proxy(request: NextRequest) {
-  const { response, user } = await updateSession(
+  const { response, claims } = await updateSession(
     request,
     I18nMiddleware(request),
   );
 
-  if (!isPublicRoute(request.nextUrl.pathname) && !user) {
+  if (!isPublicRoute(request.nextUrl.pathname) && !claims) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

@@ -14,6 +14,12 @@ import { cache } from "react";
 import superjson from "superjson";
 import { makeQueryClient } from "./query-client";
 
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:3003"
+    : "https://api.plop.email");
+
 export const getQueryClient = cache(makeQueryClient);
 
 export const trpc = createTRPCOptionsProxy<AppRouter>({
@@ -21,7 +27,7 @@ export const trpc = createTRPCOptionsProxy<AppRouter>({
   client: createTRPCClient({
     links: [
       httpBatchLink({
-        url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
+        url: `${apiBaseUrl}/trpc`,
         transformer: superjson,
         async headers() {
           const supabase = await createSupabaseClient();
