@@ -1,0 +1,16 @@
+---
+description: Conventions for @plop/logger (pino)
+globs:
+  - "packages/logger/**/*.ts"
+alwaysApply: false
+---
+# `@plop/logger`
+
+Shared `pino` logger instance.
+
+## Conventions
+
+- Prefer structured logs (objects) over string concatenation.
+- Do not log secrets (tokens, keys, raw cookies, Authorization headers).
+- Import the shared logger from `@plop/logger` instead of creating new instances in apps.
+

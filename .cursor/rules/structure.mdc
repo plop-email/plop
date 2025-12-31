@@ -1,0 +1,67 @@
+---
+alwaysApply: true
+description: Monorepo structure, stack, and common commands
+---
+# Project Structure
+
+This is a **Turborepo monorepo** using **Bun workspaces**.
+
+- **Package manager**: Bun (see `package.json#packageManager`)
+- **Formatting/linting**: Biome (`biome.json`)
+- **TypeScript**: shared configs in `tooling/typescript/*`
+
+## Directory Structure (high level)
+
+```
+.
+├── apps/
+│   ├── api/   # Bun + Hono + tRPC server
+│   ├── app/   # Product app (Next.js, App Router)
+│   ├── inbox/ # Cloudflare Email Routing worker
+│   └── web/   # Marketing site (Next.js)
+├── packages/
+│   ├── analytics/  # OpenPanel client + server helpers
+│   ├── db/         # Drizzle schema + DB client
+│   ├── email/      # React Email templates
+│   ├── jobs/       # Trigger.dev jobs
+│   ├── kv/         # Upstash Redis + rate limiting
+│   ├── logger/     # Shared pino logger
+│   ├── supabase/   # Supabase clients + local project (schemas/migrations/functions)
+│   └── ui/         # Shared UI components (shadcn-style)
+├── tooling/
+│   └── typescript/ # Shared tsconfig presets
+├── turbo.json
+├── package.json
+└── bun.lockb
+```
+
+## Most-used commands (repo root)
+
+```bash
+bun install
+bun dev
+bun dev:app
+bun dev:web
+bun dev:api
+bun dev:email
+bun dev:supabase
+
+bun run format
+bun run lint
+bun run typecheck
+bun run test
+
+# Supabase
+bun migrate
+bun seed
+bun reset
+bun generate
+```
+
+## Ports (local defaults)
+
+- App: `http://localhost:3000`
+- Web: `http://localhost:3001`
+- API: `http://localhost:3003`
+- Email dev: `http://localhost:3004`
+- Supabase Studio: `http://localhost:54323`

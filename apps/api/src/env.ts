@@ -1,0 +1,56 @@
+import { z } from "zod";
+
+const envSchema = z.object({
+  PORT: z.coerce.number().default(3003),
+  ALLOWED_API_ORIGINS: z.string().optional(),
+  APP_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  SUPABASE_SERVICE_KEY: z.string().min(1),
+  SUPABASE_JWT_SECRET: z.string().min(1),
+  DATABASE_PRIMARY_URL: z.string().url(),
+  DATABASE_LHR_URL: z.string().url(),
+  DATABASE_SESSION_POOLER: z.string().url(),
+  FLY_REGION: z.string().optional(),
+  UPSTASH_REDIS_REST_URL: z.string().url(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+  INBOX_ROOT_DOMAIN: z.string().min(1),
+  INBOX_WEBHOOK_SECRET: z.string().min(1).optional(),
+  POLAR_ACCESS_TOKEN: z.string().min(1).optional(),
+  POLAR_ENVIRONMENT: z.enum(["production", "sandbox"]).default("sandbox"),
+  POLAR_WEBHOOK_SECRET: z.string().min(1).optional(),
+  POLAR_STARTER_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
+  POLAR_STARTER_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
+  POLAR_PRO_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
+  POLAR_PRO_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
+  POLAR_ENTERPRISE_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
+  POLAR_ENTERPRISE_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
+});
+
+export const env = envSchema.parse({
+  PORT: process.env.PORT,
+  ALLOWED_API_ORIGINS: process.env.ALLOWED_API_ORIGINS,
+  APP_URL: process.env.APP_URL,
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
+  SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
+  DATABASE_PRIMARY_URL: process.env.DATABASE_PRIMARY_URL,
+  DATABASE_LHR_URL: process.env.DATABASE_LHR_URL,
+  DATABASE_SESSION_POOLER: process.env.DATABASE_SESSION_POOLER,
+  FLY_REGION: process.env.FLY_REGION,
+  UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+  UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+  INBOX_ROOT_DOMAIN: process.env.INBOX_ROOT_DOMAIN,
+  INBOX_WEBHOOK_SECRET: process.env.INBOX_WEBHOOK_SECRET,
+  POLAR_ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,
+  POLAR_ENVIRONMENT: process.env.POLAR_ENVIRONMENT,
+  POLAR_WEBHOOK_SECRET: process.env.POLAR_WEBHOOK_SECRET,
+  POLAR_STARTER_MONTHLY_PRODUCT_ID:
+    process.env.POLAR_STARTER_MONTHLY_PRODUCT_ID,
+  POLAR_STARTER_YEARLY_PRODUCT_ID: process.env.POLAR_STARTER_YEARLY_PRODUCT_ID,
+  POLAR_PRO_MONTHLY_PRODUCT_ID: process.env.POLAR_PRO_MONTHLY_PRODUCT_ID,
+  POLAR_PRO_YEARLY_PRODUCT_ID: process.env.POLAR_PRO_YEARLY_PRODUCT_ID,
+  POLAR_ENTERPRISE_MONTHLY_PRODUCT_ID:
+    process.env.POLAR_ENTERPRISE_MONTHLY_PRODUCT_ID,
+  POLAR_ENTERPRISE_YEARLY_PRODUCT_ID:
+    process.env.POLAR_ENTERPRISE_YEARLY_PRODUCT_ID,
+});

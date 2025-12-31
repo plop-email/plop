@@ -1,0 +1,17 @@
+---
+description: next-safe-action patterns (server actions boundary + auth/rate limiting)
+globs:
+  - "apps/app/src/actions/**/*.{ts,tsx}"
+  - "apps/web/src/actions/**/*.{ts,tsx}"
+alwaysApply: false
+---
+# Server Actions (next-safe-action)
+
+- Actions are a boundary. Validate inputs with Zod and keep effects explicit.
+- Prefer shared action clients:
+  - `actionClient` / `actionClientWithMeta` / `authActionClient` in `apps/app/src/actions/safe-action.ts`
+- For authenticated actions:
+  - Require a user session (via Supabase) and fail fast.
+  - Apply rate limiting consistently (see `@plop/kv/ratelimit`).
+- Keep returned error messages safe for end users (no secrets, no stack traces).
+

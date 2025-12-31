@@ -1,0 +1,28 @@
+---
+description: Conventions for @plop/supabase (clients, middleware, typegen, local project)
+globs:
+  - "packages/supabase/**/*.ts"
+  - "packages/supabase/supabase/**/*"
+alwaysApply: false
+---
+# `@plop/supabase`
+
+Supabase clients/middleware for Next.js plus a local Supabase project (schemas, migrations, functions, seed).
+
+## Entry points
+
+- Browser client: `packages/supabase/src/clients/client.ts`
+- Server client: `packages/supabase/src/clients/server.ts`
+- Middleware session refresh: `packages/supabase/src/clients/middleware.ts`
+- Generated types: `packages/supabase/src/types/db.ts`
+- Local project: `packages/supabase/supabase/`
+  - Schema (source-of-truth): `packages/supabase/supabase/schemas/`
+  - Migrations (generated): `packages/supabase/supabase/migrations/`
+
+## Conventions
+
+- Don’t hand-edit generated type files; regenerate via `bun generate`.
+- Keep cookie/session behavior centralized in the shared helpers (avoid copy/paste in apps).
+- Prefer making schema changes in `packages/supabase/supabase/schemas/*.sql`, then generating migrations via:
+  - `bun run --cwd packages/supabase migration:create -- -f <migration_name>`
+- Supabase Edge Functions live under `packages/supabase/supabase/functions/` (keep them deterministic and small).

@@ -1,0 +1,24 @@
+---
+description: Conventions for @plop/ui (shared UI components)
+globs:
+  - "packages/ui/**/*.ts"
+  - "packages/ui/**/*.tsx"
+  - "packages/ui/**/*.css"
+alwaysApply: false
+---
+# `@plop/ui`
+
+Shared UI primitives and Tailwind utilities.
+
+## Where things live
+
+- Components: `packages/ui/src/components/*`
+- Utilities: `packages/ui/src/utils/*`
+- Styles: `packages/ui/src/globals.css`
+
+## Conventions
+
+- Keep components presentation-focused (no app-specific business logic).
+- Prefer accessible-by-default primitives (keyboard, focus, labels).
+- Keep exports stable (update `package.json#exports` when adding a new public entry).
+

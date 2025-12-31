@@ -1,0 +1,33 @@
+---
+title: "Mailbox + tag addressing for deterministic tests"
+summary: "Use mailbox and tag addresses to route flows like signup, login, and billing into predictable inboxes."
+publishedAt: "2025-12-31"
+tag: "Guides"
+image: "/images/mailbox-tag-addressing.png"
+---
+
+Plop uses a simple address pattern to keep your email flows deterministic. You can route multiple flows into the same mailbox and distinguish them by tag.
+
+## The pattern
+
+Use `mailbox+tag@in.plop.email`.
+
+Examples:
+
+- `qa+signup@in.plop.email`
+- `qa+login@in.plop.email`
+- `billing+invoice@in.plop.email`
+
+All messages for `qa+*` land in the `qa` mailbox. Tags let you isolate flows without creating dozens of mailboxes.
+
+## Why it matters
+
+Tests need a consistent target. When each flow has its own tag, your API calls become stable and you avoid fuzzy matching on subject lines.
+
+## Suggested usage
+
+1. Pick a mailbox per environment (`qa`, `staging`, `prod`).
+2. Use tags for each flow (`signup`, `reset`, `invite`).
+3. Fetch the latest message by mailbox + tag in your tests.
+
+That is it. No more inbox hunting.

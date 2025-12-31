@@ -1,0 +1,14 @@
+/* biome-ignore-all lint/complexity/noImportantStyles: Intentional override of third-party fumadocs-ui styles */
+@import "tailwindcss";
+@import "@plop/ui/globals.css";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@config "../../tailwind.config.ts";
+
+.prose a {
+  text-decoration: none !important;
+}
+
+.prose a:hover {
+  text-decoration: none !important;
+}

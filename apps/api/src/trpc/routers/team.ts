@@ -1,0 +1,245 @@
+import { teamInvites, teamMemberships, teams, users } from "@plop/db/schema";
+import { TRPCError } from "@trpc/server";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { z } from "zod";
+import { createTRPCRouter, protectedProcedure, teamProcedure } from "../init";
+
+function requireOwner(role: "owner" | "member") {
+  if (role !== "owner") {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+}
+
+const trialPlanSchema = z.enum(["starter", "pro"]);
+
+export const teamRouter = createTRPCRouter({
+  current: teamProcedure.query(async ({ ctx }) => {
+    const [team] = await ctx.db
+      .select()
+      .from(teams)
+      .where(eq(teams.id, ctx.teamId))
+      .limit(1);
+
+    if (!team) return null;
+
+    return {
+      ...team,
+      role: ctx.teamRole,
+    };
+  }),
+
+  membership: protectedProcedure.query(async ({ ctx }) => {
+    const membershipDb = ctx.db.usePrimaryOnly
+      ? ctx.db.usePrimaryOnly()
+      : ctx.db;
+    const [membership] = await membershipDb
+      .select({
+        teamId: teamMemberships.teamId,
+        role: teamMemberships.role,
+      })
+      .from(teamMemberships)
+      .where(eq(teamMemberships.userId, ctx.user.id))
+      .limit(1);
+
+    return membership ?? null;
+  }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(2).max(80),
+        plan: trialPlanSchema.optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const membershipDb = ctx.db.usePrimaryOnly
+        ? ctx.db.usePrimaryOnly()
+        : ctx.db;
+      const [membership] = await membershipDb
+        .select({ id: teamMemberships.id })
+        .from(teamMemberships)
+        .where(eq(teamMemberships.userId, ctx.user.id))
+        .limit(1);
+
+      if (membership) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You already have a team.",
+        });
+      }
+
+      const name = input.name.trim();
+      if (!name) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Team name is required.",
+        });
+      }
+
+      const plan = input.plan ?? "pro";
+
+      const result = await ctx.db.execute<{ id: string }>(
+        sql`select public.create_team(${name}, ${plan}) as id`,
+      );
+
+      const teamId = result[0]?.id;
+      if (!teamId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create team.",
+        });
+      }
+
+      return { teamId };
+    }),
+
+  update: teamProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(80).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      requireOwner(ctx.teamRole);
+
+      const [team] = await ctx.db
+        .update(teams)
+        .set({
+          ...(input.name !== undefined && { name: input.name }),
+        })
+        .where(eq(teams.id, ctx.teamId))
+        .returning();
+
+      return team;
+    }),
+
+  members: teamProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({
+        membership: teamMemberships,
+        user: users,
+      })
+      .from(teamMemberships)
+      .innerJoin(users, eq(teamMemberships.userId, users.id))
+      .where(eq(teamMemberships.teamId, ctx.teamId))
+      .orderBy(desc(teamMemberships.createdAt));
+
+    return rows.map((row) => ({
+      id: row.membership.id,
+      role: row.membership.role,
+      createdAt: row.membership.createdAt,
+      user: {
+        id: row.user.id,
+        email: row.user.email,
+        fullName: row.user.fullName,
+        avatarUrl: row.user.avatarUrl,
+      },
+    }));
+  }),
+
+  invites: teamProcedure.query(async ({ ctx }) => {
+    requireOwner(ctx.teamRole);
+
+    return ctx.db
+      .select()
+      .from(teamInvites)
+      .where(
+        and(eq(teamInvites.teamId, ctx.teamId), isNull(teamInvites.acceptedAt)),
+      )
+      .orderBy(desc(teamInvites.createdAt));
+  }),
+
+  invite: teamProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      requireOwner(ctx.teamRole);
+
+      const [existing] = await ctx.db
+        .select()
+        .from(teamInvites)
+        .where(
+          and(
+            eq(teamInvites.teamId, ctx.teamId),
+            eq(teamInvites.email, input.email),
+            isNull(teamInvites.acceptedAt),
+          ),
+        )
+        .limit(1);
+
+      if (existing) return existing;
+
+      const [invite] = await ctx.db
+        .insert(teamInvites)
+        .values({
+          teamId: ctx.teamId,
+          email: input.email,
+          role: "member",
+          invitedBy: ctx.user!.id,
+        })
+        .returning();
+
+      return invite;
+    }),
+
+  deleteInvite: teamProcedure
+    .input(z.object({ inviteId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      requireOwner(ctx.teamRole);
+
+      await ctx.db
+        .delete(teamInvites)
+        .where(
+          and(
+            eq(teamInvites.id, input.inviteId),
+            eq(teamInvites.teamId, ctx.teamId),
+            isNull(teamInvites.acceptedAt),
+          ),
+        );
+
+      return { ok: true };
+    }),
+
+  removeMember: teamProcedure
+    .input(z.object({ userId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      requireOwner(ctx.teamRole);
+
+      if (input.userId === ctx.user!.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You can’t remove yourself.",
+        });
+      }
+
+      const memberships = await ctx.db
+        .select()
+        .from(teamMemberships)
+        .where(eq(teamMemberships.teamId, ctx.teamId));
+
+      const target = memberships.find((m) => m.userId === input.userId);
+      if (!target) return { ok: true };
+
+      const ownerCount = memberships.filter((m) => m.role === "owner").length;
+      if (target.role === "owner" && ownerCount <= 1) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You can’t remove the last owner.",
+        });
+      }
+
+      await ctx.db
+        .delete(teamMemberships)
+        .where(
+          and(
+            eq(teamMemberships.teamId, ctx.teamId),
+            eq(teamMemberships.userId, input.userId),
+          ),
+        );
+
+      return { ok: true };
+    }),
+});

@@ -1,0 +1,16 @@
+---
+description: Conventions for @plop/email (React Email templates)
+globs:
+  - "packages/email/**/*.{ts,tsx}"
+alwaysApply: false
+---
+# `@plop/email`
+
+React Email templates and shared email components.
+
+## Conventions
+
+- Keep templates deterministic (no `fetch` during render).
+- Pass fully-prepared data into templates.
+- Keep template styling compatible with email clients (avoid bleeding-edge CSS).
+

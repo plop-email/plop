@@ -1,0 +1,16 @@
+{
+  "install": "bun install",
+  "start": "bun dev",
+  "terminals": [
+    { "name": "Dev (all)", "command": "bun dev" },
+    { "name": "Supabase", "command": "bun dev:supabase" },
+    { "name": "API", "command": "bun dev:api" },
+    { "name": "App", "command": "bun dev:app" },
+    { "name": "Web", "command": "bun dev:web" },
+    { "name": "Email", "command": "bun dev:email" },
+    { "name": "Format", "command": "bun run format" },
+    { "name": "Lint", "command": "bun run lint" },
+    { "name": "Typecheck", "command": "bun run typecheck" },
+    { "name": "Test", "command": "bun run test" }
+  ]
+}

@@ -1,0 +1,39 @@
+---
+description: apps/inbox architecture (Cloudflare Email Worker + R2)
+globs:
+  - "apps/inbox/src/**/*.ts"
+alwaysApply: false
+---
+# Inbox Worker Architecture
+
+This Worker receives inbound email via **Cloudflare Email Routing**, stores `.eml` in **R2**, and (optionally) posts a webhook to the main API.
+
+## Entry points
+
+- `src/index.ts`: Hono app + Email Worker handler.
+- `fetch` handles admin endpoints (`/admin/*`).
+- `email` handles inbound email from Cloudflare.
+
+## Storage model
+
+- Raw `.eml`: `raw/<domain>/<mailbox>/<id>.eml`
+- Metadata: `messages/<status>/<domain>/<mailbox>/<id>.json`
+- `status` is `unprocessed` until webhook succeeds.
+
+## Webhook payload
+
+- Event: `email.received`
+- Includes `domain`, `tenantSubdomain`, `mailbox`, `mailboxWithTag`, `tag`, `from`, `to`, `subject`, `headers`, `rawContent`, `plainContent`.
+- `tag` is **separate** from the mailbox name; mailbox names should not include `+tag`.
+
+## Main app integration
+
+- `WEBHOOK_URL` should point to the API handler (e.g. `/webhooks/inbox`).
+- `WEBHOOK_AUTH_TOKEN` is required for authorization.
+- Webhook success (2xx) marks the message `processed`.
+
+## Conventions
+
+- Keep mailbox names lowercase.
+- Preserve the full domain (including subdomain) in payloads.
+- Treat webhook failures as retryable (keep `unprocessed`).

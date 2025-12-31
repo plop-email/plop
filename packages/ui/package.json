@@ -1,0 +1,65 @@
+{
+  "name": "@plop/ui",
+  "version": "0.1.0",
+  "private": true,
+  "sideEffects": false,
+  "files": [
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "globals.css"
+  ],
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "postcss": "^8.4.43",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    "./globals.css": "./src/globals.css",
+    "./cn": "./src/utils/cn.ts",
+    "./button": "./src/components/button.tsx",
+    "./accordion": "./src/components/accordion.tsx",
+    "./tabs": "./src/components/tabs.tsx",
+    "./input": "./src/components/input.tsx",
+    "./label": "./src/components/label.tsx",
+    "./tooltip": "./src/components/tooltip.tsx",
+    "./dialog": "./src/components/dialog.tsx",
+    "./dropdown-menu": "./src/components/dropdown-menu.tsx",
+    "./calendar": "./src/components/calendar.tsx",
+    "./skeleton": "./src/components/skeleton.tsx",
+    "./icons": "./src/components/icons.tsx",
+    "./card": "./src/components/card.tsx",
+    "./sidebar": "./src/components/sidebar.tsx",
+    "./sheet": "./src/components/sheet.tsx",
+    "./table": "./src/components/table.tsx",
+    "./select": "./src/components/select.tsx",
+    "./tailwind.config": "./tailwind.config.ts",
+    "./postcss": "./postcss.config.js"
+  },
+  "dependencies": {
+    "@radix-ui/react-accordion": "^1.2.2",
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.2",
+    "@radix-ui/react-tooltip": "^1.1.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "react-day-picker": "9.8.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
+  }
+}

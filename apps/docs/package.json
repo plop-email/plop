@@ -1,0 +1,42 @@
+{
+  "name": "@plop/docs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3002",
+    "build": "fumadocs-mdx && next build",
+    "start": "next start -p 3002",
+    "clean": "rm -rf .turbo node_modules tsconfig.tsbuildinfo .next .content-collections .source",
+    "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
+    "typecheck": "bun run types:check",
+    "postinstall": "fumadocs-mdx",
+    "lint": "biome lint",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@plop/ui": "workspace:*",
+    "fumadocs-core": "16.2.5",
+    "fumadocs-mdx": "14.1.0",
+    "fumadocs-ui": "16.2.5",
+    "geist": "^1.5.1",
+    "lucide-react": "^0.562.0",
+    "next": "16.1.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/mdx": "^2.0.13",
+    "@types/node": "^25.0.3",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "16.1.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3"
+  }
+}

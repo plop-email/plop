@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+description: apps/app patterns (Next.js product app)
+---
+# App Patterns (`@plop/app`)
+
+## Architecture
+
+This is a Next.js App Router application with:
+
+- Supabase Auth (SSR helpers in `@plop/supabase/*`)
+- tRPC + TanStack Query (`@trpc/tanstack-react-query`)
+- Server Actions via `next-safe-action`
+- i18n via `next-international`
+- Observability via Sentry (`sentry.*.config.ts`)
+
+## Where things live
+
+- Routes/layouts: `src/app/` (locale-aware under `src/app/[locale]/`)
+- Components: `src/components/`
+- Server actions: `src/actions/`
+- tRPC wiring: `src/trpc/`
+- Middleware: `src/middleware.ts` (session refresh + auth redirect)
+- Env validation: `src/env.mjs`
+
+## Conventions
+
+- Default to Server Components; add `"use client"` only when needed.
+- Keep auth/session concerns centralized (middleware + shared Supabase helpers).
+- Prefer tRPC options (`trpc.x.y.queryOptions()`) for consistent caching/prefetching.
+- Server actions should validate inputs and be the only place that performs side effects for that action.
+

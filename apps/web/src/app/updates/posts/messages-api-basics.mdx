@@ -1,0 +1,37 @@
+---
+title: "Messages API basics: latest, list, and filters"
+summary: "Pull the latest message, list a mailbox, and filter by tag or time window with a clean API surface."
+publishedAt: "2025-12-31"
+tag: "Engineering"
+image: "/images/messages-api-basics.png"
+---
+
+The Messages API is designed for automation. It gives you predictable access to inbound email without scraping an inbox UI.
+
+## Core endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /v1/messages/latest` | Fetch the newest message for a mailbox + tag |
+| `GET /v1/messages` | List messages with filters |
+| `GET /v1/messages/:id` | Fetch a specific message by id |
+
+## Example: latest message
+
+```bash
+curl "https://api.plop.email/v1/messages/latest?mailbox=qa&tag=signup"
+```
+
+## Example: list with filters
+
+```bash
+curl "https://api.plop.email/v1/messages?mailbox=qa&tag=signup&limit=10"
+```
+
+## Recommended patterns
+
+- Use `latest` for E2E tests and health checks.
+- Use lists for dashboards or workflow automation.
+- Store message ids in your workflow logs for traceability.
+
+If you need a new filter or payload field, tell us. We design this API around real workflows, not theoretical mail clients.

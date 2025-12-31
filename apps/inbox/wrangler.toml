@@ -1,0 +1,31 @@
+name = "inbox"
+main = "src/index.ts"
+compatibility_date = "2025-12-18"
+workers_dev = true
+
+[observability]
+enabled = true
+
+[vars]
+# Root email domain this worker accepts mail for.
+# This worker will accept:
+# - anything@in.plop.email
+# - anything@*.in.plop.email (for example anything@company1.in.plop.email)
+EMAIL_DOMAIN = "in.plop.email"
+
+# Worker name to reference in Email Routing rule action `worker`.
+# Usually the deployed Worker name (often the `name` above, or an env-specific name).
+EMAIL_WORKER_NAME = "inbox"
+
+# Cloudflare Zone ID for the apex zone (plop.email).
+# Note: `in.plop.email` is a subdomain under this zone.
+CLOUDFLARE_ZONE_ID = "0c4e890990bba87dc294c4cc5bbe06a7"
+
+# Optional: POST metadata to your main service when an email is received.
+# If set and the webhook returns a 2xx, the message is moved from `unprocessed/` to `processed/`.
+WEBHOOK_URL = "api.plop.email/webhooks/inbox"
+WEBHOOK_TIMEOUT_MS = "10000"
+
+[[r2_buckets]]
+binding = "INBOX_STORAGE"
+bucket_name = "inbox-emails"

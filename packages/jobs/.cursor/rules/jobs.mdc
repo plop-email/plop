@@ -1,0 +1,16 @@
+---
+description: Conventions for @plop/jobs (Trigger.dev)
+globs:
+  - "packages/jobs/**/*.{ts,tsx}"
+alwaysApply: false
+---
+# `@plop/jobs`
+
+Trigger.dev job definitions.
+
+## Conventions
+
+- Keep tasks idempotent; expect retries (see `trigger.config.ts`).
+- Avoid long-running work on the request thread; delegate to jobs where appropriate.
+- Keep job IDs stable; changing IDs breaks deduping/history.
+

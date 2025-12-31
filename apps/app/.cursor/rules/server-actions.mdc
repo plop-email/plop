@@ -1,0 +1,13 @@
+---
+globs: "src/actions/**/*.{ts,tsx}"
+alwaysApply: false
+description: Server action conventions for apps/app
+---
+# Server Actions (apps/app)
+
+- Prefer `next-safe-action` clients from `src/actions/safe-action.ts` so auth/rate limit/analytics behavior stays consistent.
+- Keep Zod schemas close to the action (co-located `schema.ts` is preferred).
+- For authenticated actions:
+  - Fail fast if no user session.
+  - Do not trust client-provided IDs; derive `userId` from the session.
+

@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+description: Shared package conventions for packages/*
+---
+# Shared Package Patterns
+
+The `packages/` directory contains reusable modules shared across the monorepo.
+
+## Packages in this repo
+
+- `packages/ui` (`@plop/ui`): shared UI primitives/components
+- `packages/db` (`@plop/db`): Drizzle schema + DB client
+- `packages/supabase` (`@plop/supabase`): Supabase clients, types, local project config/migrations
+- `packages/kv` (`@plop/kv`): Upstash Redis client + rate limiting
+- `packages/logger` (`@plop/logger`): shared `pino` logger
+- `packages/analytics` (`@plop/analytics`): OpenPanel client/server helpers
+- `packages/email` (`@plop/email`): React Email templates
+- `packages/jobs` (`@plop/jobs`): Trigger.dev jobs
+
+## Conventions
+
+- Apps depend on packages; packages must not depend on apps.
+- Keep package public APIs explicit via `package.json#exports`; avoid deep imports from consumers.
+- Mark server-only modules with `server-only` and keep browser-safe code in separate entry points when needed.
+- Prefer small, composable exports over large grab-bag modules.
+

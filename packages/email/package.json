@@ -1,0 +1,25 @@
+{
+  "name": "@plop/email",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit",
+    "dev": "email dev -p 3004",
+    "build": "email build",
+    "start": "email start"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.24",
+    "@react-email/tailwind": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-email": "^3.0.1"
+  }
+}

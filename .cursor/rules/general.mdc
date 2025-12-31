@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+description: Repo-wide engineering rules and defaults
+---
+# General Rules
+
+- Prefer full, maintainable implementations over quick shims/workarounds.
+- Keep monorepo boundaries clean:
+  - Apps import shared code from `packages/*` via `@plop/*`.
+  - Avoid importing code from one app into another app.
+- Don’t remove, hide, or rename existing features, routes, or UI options unless explicitly asked.
+- If a feature isn’t fully wired yet, keep the UX surface intact and annotate/disable it instead of deleting it.
+- Match existing patterns in the nearest file/directory before introducing a new pattern.
+- Prefer typed boundaries:
+  - Use Zod for request/action inputs and env parsing.
+  - Keep untrusted input validation at the edge (API, middleware, server actions).
+- Keep “server vs client” boundaries explicit in Next.js:
+  - Use `"server-only"` in server-only modules.
+  - Add `"use client"` only when necessary.
+

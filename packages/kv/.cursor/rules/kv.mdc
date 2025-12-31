@@ -1,0 +1,16 @@
+---
+description: Conventions for @plop/kv (Upstash Redis + rate limiting)
+globs:
+  - "packages/kv/**/*.ts"
+alwaysApply: false
+---
+# `@plop/kv`
+
+Server-only wrapper around Upstash Redis + rate limiting.
+
+## Conventions
+
+- Keep this package server-only (`server-only`) and do not import it from Client Components.
+- Prefer typed helpers for common key prefixes; avoid scattered ad-hoc string keys.
+- Centralize rate limit policy in `src/ratelimit.ts` so apps behave consistently.
+

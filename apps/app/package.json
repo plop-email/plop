@@ -1,0 +1,59 @@
+{
+  "name": "@plop/app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "clean": "git clean -xdf .next .turbo node_modules",
+    "lint": "biome lint",
+    "format": "biome format --write .",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@plop/analytics": "workspace:*",
+    "@plop/api": "workspace:*",
+    "@plop/billing": "workspace:*",
+    "@plop/jobs": "workspace:*",
+    "@plop/kv": "workspace:*",
+    "@plop/supabase": "workspace:*",
+    "@plop/ui": "workspace:*",
+    "@supabase/supabase-js": "^2.89.0",
+    "@tanstack/react-query": "^5.90.12",
+    "@trigger.dev/sdk": "4.3.0",
+    "@trpc/client": "^11.8.0",
+    "@trpc/server": "^11.8.0",
+    "@trpc/tanstack-react-query": "^11.8.0",
+    "dub": "^0.69.0",
+    "framer-motion": "^12.0.0",
+    "geist": "^1.5.1",
+    "lucide-react": "^0.562.0",
+    "next": "16.1.0",
+    "next-international": "^1.3.1",
+    "next-safe-action": "^8.0.11",
+    "next-themes": "^0.4.6",
+    "nuqs": "^2.8.5",
+    "react": "19.2.3",
+    "react-day-picker": "9.8.0",
+    "react-dom": "19.2.3",
+    "superjson": "^2.2.6",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@sentry/nextjs": "^10.32.0",
+    "@supabase/sentry-js-integration": "^0.3.0",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^25.0.3",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "16.1.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3"
+  }
+}

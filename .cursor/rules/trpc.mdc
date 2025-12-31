@@ -1,0 +1,25 @@
+---
+description: tRPC conventions for API + Next.js client/server wiring
+globs:
+  - "apps/api/src/trpc/**/*.ts"
+  - "apps/app/src/trpc/**/*.{ts,tsx}"
+alwaysApply: false
+---
+# tRPC Conventions
+
+## API (`apps/api`)
+
+- Root router: `apps/api/src/trpc/routers/_app.ts`
+- Feature routers live in `apps/api/src/trpc/routers/*`
+- Use `zod` schemas in `.input(...)` to validate all external inputs.
+- Use:
+  - `publicProcedure` for unauthenticated routes
+  - `protectedProcedure` for routes that require `ctx.user`
+- Prefer returning plain JSON-serializable objects (transformer is `superjson`, but keep outputs simple).
+
+## App (`apps/app`)
+
+- Client provider: `apps/app/src/trpc/client.tsx` (`TRPCReactProvider`, `useTRPC()`)
+- Server helpers: `apps/app/src/trpc/server.tsx` (`trpc`, `prefetch`, `HydrateClient`)
+- Use `@trpc/tanstack-react-query` options (`trpc.x.y.queryOptions()`) for consistent caching/prefetching.
+

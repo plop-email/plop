@@ -1,0 +1,62 @@
+---
+title: Messages API
+description: How to list and fetch inbox messages from the REST API.
+---
+
+The REST API exposes message retrieval for polling, search, and E2E flows.
+
+## Endpoints
+
+### List messages
+
+`GET /v1/messages`
+
+Returns the newest message summaries first. Use this when you need filters before fetching full content.
+
+Query params:
+
+- `mailbox` — local part or full address
+- `tag` / `tags` — tag filters
+- `q` — free‑text search
+- `limit` — 1–200 (default 50)
+- `start` / `end` — date range (YYYY‑MM‑DD)
+- `since` — ISO timestamp (preferred for polling)
+- `to`, `from`, `subject` — partial matches
+
+### Latest matching message
+
+`GET /v1/messages/latest`
+
+Returns the single most recent match with full content. **Limit is ignored**. This is the recommended endpoint for E2E polling.
+
+### Message by id
+
+`GET /v1/messages/:id`
+
+Fetch full content for a specific message.
+
+## Scopes
+
+All message endpoints require one of:
+
+- `api.full`
+- `email.full`
+- `email.mailbox`
+
+Mailbox‑scoped keys must match the `mailbox` filter if you provide it.
+
+## Response shape
+
+The list endpoint returns `data: MessageSummary[]`. The detail endpoints return `data: MessageDetail` with:
+
+- `headers`
+- `htmlContent` / `textContent`
+- `domain`, `tenantSubdomain`
+- `mailbox`, `mailboxWithTag`, `tag`, `receivedAt`
+
+## Example
+
+```bash
+curl -H "Authorization: Bearer <API_KEY>" \
+  "https://api.plop.email/v1/messages?mailbox=qa&tag=login&limit=10"
+```

@@ -1,0 +1,58 @@
+---
+title: Inbox webhook contract
+description: Payload schema and auth for inbox → API ingestion.
+---
+
+The inbox worker POSTs to `apps/api` at `POST /webhooks/inbox`.
+
+## Auth
+
+The API requires a bearer token that matches `INBOX_WEBHOOK_SECRET`.
+
+```
+Authorization: Bearer <INBOX_WEBHOOK_SECRET>
+```
+
+## Payload
+
+Required fields (trimmed and normalized by the API):
+
+- `event` — `email.received`
+- `id` — UUID
+- `domain` — full recipient domain
+- `tenantSubdomain` — optional
+- `mailbox` — base local part (lowercased)
+- `mailboxWithTag` — full local part (including tag)
+- `tag` — optional
+- `from`, `to`, `subject`
+- `receivedAt` — ISO timestamp
+- `headers` — `{ name, value }[]`
+- `rawContent` — HTML (best effort)
+- `plainContent` — text/plain (best effort)
+
+### Example
+
+```json
+{
+  "event": "email.received",
+  "id": "b3b9c8b1-9d2a-4f1c-9b0f-2d4d2a2f2b3a",
+  "domain": "in.plop.email",
+  "tenantSubdomain": null,
+  "mailbox": "qa",
+  "mailboxWithTag": "qa+login",
+  "tag": "login",
+  "from": "no-reply@example.com",
+  "to": "qa+login@in.plop.email",
+  "subject": "Your login token",
+  "receivedAt": "2025-12-24T12:34:56.000Z",
+  "headers": [
+    { "name": "Subject", "value": "Your login token" }
+  ],
+  "rawContent": "<html>...</html>",
+  "plainContent": "Your login token is 123456"
+}
+```
+
+<Callout type="warning">
+`receivedAt` must be a valid ISO timestamp. Invalid dates will return a 422.
+</Callout>

@@ -1,0 +1,19 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Overview---",
+    "system-overview",
+    "---Inbox---",
+    "inbox-pipeline",
+    "inbox-domains-mailboxes",
+    "messages-api",
+    "e2e-email-polling",
+    "inbox-webhook-contract",
+    "inbox-worker-admin",
+    "---Operations---",
+    "env-and-secrets",
+    "---Product Guides---",
+    "app-domain-addition"
+  ]
+}

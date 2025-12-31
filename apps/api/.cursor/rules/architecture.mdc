@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+description: apps/api architecture (Bun + Hono + tRPC)
+---
+# API Architecture (`@plop/api`)
+
+This app is a Bun runtime service built with **Hono** and **tRPC**.
+
+## Entry point
+
+- `src/index.ts`: creates the `Hono` app, installs CORS, mounts tRPC, and exposes a Bun `fetch` handler.
+
+## Routes
+
+- `POST /trpc/*`: tRPC endpoint (mounted via `@hono/trpc-server`)
+- `GET /health`: basic health check
+
+## Env + secrets
+
+- `src/env.ts`: Zod-validated env parsing.
+- `SUPABASE_SERVICE_KEY` is a server secret; do not expose it to the browser.
+
+## Auth model
+
+- Auth is passed as `Authorization: Bearer <access_token>`.
+- `createTRPCContext` in `src/trpc/init.ts` verifies tokens via Supabase `auth.getUser(...)` and populates `ctx.user`.
+
+## DB access
+
+- DB client is `@plop/db/client` (Drizzle + `pg`).
+- Always scope queries by the authenticated user when appropriate (e.g. `where(eq(table.userId, ctx.user.id))`).
+

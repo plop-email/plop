@@ -1,0 +1,33 @@
+---
+title: Welcome
+description: Central documentation for Plop and inbox automation playbooks.
+---
+
+This site collects product documentation, internal playbooks, and platform references for Plop (plop.email). Use it to track UI flows, data contracts, and operational notes in one place.
+
+---
+
+## Documentation
+
+<Cards>
+<Card title="System overview" href="/system-overview">
+Understand how the apps and packages fit together.
+</Card>
+<Card title="Inbox pipeline" href="/inbox-pipeline">
+Follow the inbound email flow from Cloudflare to the UI.
+</Card>
+<Card title="E2E: pull latest email" href="/e2e-email-polling">
+Grab OTPs and links by polling the Messages API.
+</Card>
+<Card title="App domain addition" href="/app-domain-addition">
+Restore and maintain the custom domain flow inside the main app settings.
+</Card>
+</Cards>
+
+---
+
+## Contributing
+
+- Add new docs under `apps/docs/content/docs`.
+- Update `apps/docs/content/docs/meta.json` to order pages and sections.
+- Keep docs focused on decisions, flows, and operational steps.

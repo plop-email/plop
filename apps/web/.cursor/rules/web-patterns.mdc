@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+description: apps/web patterns (Next.js marketing site)
+---
+# Web Patterns (`@plop/web`)
+
+## Goals
+
+- Keep pages fast and mostly static/server-rendered.
+- Minimize client JS; use `"use client"` only for interactive widgets.
+- Prioritize SEO (metadata, OG images, clean headings).
+
+## Conventions
+
+- Prefer server actions for form submissions (e.g. newsletter subscribe).
+- Validate user inputs at the boundary (Zod) before calling external APIs.
+- Keep components small and presentation-focused; avoid pulling app/business logic into the marketing site.
+

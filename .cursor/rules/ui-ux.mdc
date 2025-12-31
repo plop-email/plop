@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+description: UI/UX guardrails for accessible, fast, consistent interfaces
+---
+# UI/UX Guardrails
+
+## Accessibility
+
+- Prefer native semantics (`button`, `a`, `label`, `table`) before adding ARIA.
+- Ensure visible focus (`:focus-visible`) and full keyboard support for interactive UI.
+- Icon-only buttons must include an accessible label (`aria-label` or visible text).
+
+## Forms
+
+- Don’t block paste in inputs.
+- Show validation errors inline near the field and focus the first invalid field on submit.
+- Use correct `type`, `inputMode`, and valid `autoComplete` tokens.
+
+## Navigation
+
+- Links are links: use `<a>`/`<Link>` for navigation so open-in-new-tab works.
+- Keep URL and state in sync (filters/tabs/pagination).
+

@@ -1,0 +1,34 @@
+---
+description: Next.js (App Router) conventions for apps/*
+globs:
+  - "apps/app/src/**/*.{ts,tsx}"
+  - "apps/web/src/**/*.{ts,tsx}"
+alwaysApply: false
+---
+# Next.js Conventions
+
+## Server-first
+
+- Default to **Server Components**. Add `"use client"` only when you need browser-only APIs, local UI state, or effects.
+- Prefer server data loading over client waterfalls.
+
+## Auth + session
+
+- Use Supabase clients from `@plop/supabase/*`:
+  - Browser client: `@plop/supabase/client`
+  - Server client: `@plop/supabase/server`
+  - Middleware session refresh: `@plop/supabase/middleware`
+
+## URL state
+
+- URL should reflect UI state (filters, pagination, tabs). Prefer `nuqs` over ad-hoc `useSearchParams` parsing.
+
+## Internationalization (apps/app)
+
+- Follow `next-international` conventions and keep locale handling in routing/middleware, not in random components.
+
+## Performance
+
+- Avoid unnecessary `useEffect`/state when a value can be derived during render.
+- Prevent layout shift (images reserve space; avoid late-loading fonts without fallbacks).
+

@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+description: Shared TypeScript config conventions (tooling/typescript)
+---
+# TypeScript Config Conventions
+
+- Shared configs live in `tooling/typescript/*.json` and should be kept small and composable.
+- Apps/packages should extend a shared base (`base.json`, `nextjs.json`, `react-library.json`) instead of copying large compilerOptions blocks.
+- Prefer repo-wide changes in shared configs over one-off overrides in individual workspaces.
+

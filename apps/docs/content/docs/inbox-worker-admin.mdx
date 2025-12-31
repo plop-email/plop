@@ -1,0 +1,55 @@
+---
+title: Inbox worker admin API
+description: Admin endpoints to manage routing, list mailboxes, and replay webhooks.
+---
+
+All admin endpoints require:
+
+```
+Authorization: Bearer <ADMIN_TOKEN>
+```
+
+## Mailboxes
+
+- `GET /admin/inboxes` — list mailboxes
+- `GET /admin/inboxes?domain=<domain>` — list mailboxes for a subdomain
+- `GET /admin/inboxes?status=processed` — list processed mailboxes
+
+```bash
+curl "https://<worker-host>/admin/inboxes?limit=200" \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+```
+
+## Messages
+
+- `GET /admin/inboxes/:localPart/messages` — list messages
+- `GET /admin/inboxes/:localPart/messages/:id` — parsed content + eml URL
+- `GET /admin/inboxes/:localPart/messages/:id/raw` — download raw `.eml`
+
+```bash
+curl "https://<worker-host>/admin/inboxes/qa/messages?limit=50" \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+```
+
+## Webhook retry
+
+Repost a message to the main API and mark processed on success:
+
+```bash
+curl -X POST "https://<worker-host>/admin/inboxes/qa/messages/<id>/webhook" \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+```
+
+## Routing helpers
+
+- `POST /admin/catch-all/worker` — enable routing to the worker
+- `GET /admin/email-routing/dns` — list required DNS records
+- `POST /admin/email-routing/dns/enable` — add + lock DNS records
+- `POST /admin/subdomains` — enable a subdomain (builds `<subdomain>.<EMAIL_DOMAIN>`)
+
+```bash
+curl -X POST "https://<worker-host>/admin/catch-all/worker" \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "Content-Type: application/json" \
+  --data '{"enabled":true}'
+```

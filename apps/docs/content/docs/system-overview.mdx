@@ -1,0 +1,52 @@
+---
+title: System overview
+description: What the apps and packages do, and how the main workflows connect.
+---
+
+This monorepo ships a product app, public marketing site, API, and an inbox worker. The key workflows are split across these surfaces, with shared code in `packages/*`.
+
+## Apps at a glance
+
+- `apps/app` — product UI (Next.js). Primary interface for teams and inbox settings.
+- `apps/api` — API + webhook intake (Hono + tRPC).
+- `apps/inbox` — Cloudflare Email Routing worker that receives inbound email.
+- `apps/web` — marketing site.
+
+## Shared packages
+
+- `packages/db` — Drizzle schema and query helpers.
+- `packages/supabase` — Supabase client utilities + schema/migrations.
+- `packages/ui` — shared UI primitives and Tailwind config.
+- `packages/kv` — rate limiting helpers.
+
+## Core workflows
+
+<Steps>
+<Step>
+**Inbound email ingestion**
+
+Cloudflare Email Routing forwards inbound email to `apps/inbox`, which stores the raw `.eml` in R2 and posts a webhook to `apps/api`.
+</Step>
+
+<Step>
+**Webhook storage**
+
+`apps/api` validates the webhook, resolves the team + mailbox, and writes records into the database.
+</Step>
+
+<Step>
+**UI display**
+
+`apps/app` reads inbox data via API/trpc to show messages and mailbox configuration.
+</Step>
+</Steps>
+
+<Callout type="info">
+The inbox worker and API are intentionally decoupled. If the webhook fails, the worker retains the message in R2 and can retry later via the admin endpoint.
+</Callout>
+
+## Where to look next
+
+- Inbox pipeline details: `inbox-pipeline`.
+- Domain + mailbox rules: `inbox-domains-mailboxes`.
+- Pulling email in E2E tests: `e2e-email-polling`.

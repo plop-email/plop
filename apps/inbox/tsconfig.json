@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "types": ["@cloudflare/workers-types/2023-07-01", "@types/bun"],
+    "lib": ["ESNext"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,49 @@
+# Domain addition (apps/app)
+
+This doc captures how the custom domain flow was wired in the app UI, so it can
+be restored later.
+
+## Where the UI lives
+
+- `apps/app/src/components/settings/team-inbox-settings.tsx`
+  - Previously contained a "Domains" card and action buttons.
+  - Uses `useInboxSettingsParams()` to open a sheet via query params.
+- `apps/app/src/components/settings/inbox-domain-sheet.tsx`
+  - The sheet UI for adding/editing the domain.
+  - Uses `trpc.inbox.settings.get` (read) + `trpc.inbox.settings.update`
+    (write).
+- `apps/app/src/hooks/use-inbox-settings-params.ts`
+  - `domainSheet` query param (`"create"` or `"edit"`) controls the sheet.
+
+## Data flow
+
+1. **Owner check**: `trpc.team.current` provides role and gates actions.
+2. **Current domain**: `trpc.inbox.settings.get` supplies `settings.domain`.
+3. **Save**: `trpc.inbox.settings.update` persists a domain string or `null`.
+4. **Refresh**: invalidate `inbox.settings.get` + `inbox.mailboxes.list`.
+
+## Validation rules
+
+- Domain must match `/^[a-z0-9.-]+$/i`.
+- Empty input maps to `null` (shared domain).
+- Only team owners can save.
+
+## How to re-enable in the app
+
+1. **Restore the Domains card** in
+   `apps/app/src/components/settings/team-inbox-settings.tsx`:
+   - Add a "Domains" `Card` before the mailboxes section.
+   - Include the "Add/Edit domain" button that calls:
+     `setParams({ domainSheet: "create" | "edit", mailboxSheet: null, mailboxId: null })`.
+   - Display the current domain + status and updated date.
+
+2. **Render the sheet**:
+   - Re-add `<InboxDomainSheet />` in `TeamInboxSettings`.
+
+3. **Keep query params**:
+   - `useInboxSettingsParams()` already exposes `domainSheet`.
+
+## Notes
+
+- This doc only covers the `apps/app` UI. The API/worker flows (`apps/api`,
+  `apps/inbox`) were left intact.

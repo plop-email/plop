@@ -1,0 +1,26 @@
+---
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+alwaysApply: true
+description: TypeScript conventions (applies across apps/packages)
+---
+# TypeScript Conventions
+
+## Imports/exports
+
+- Prefer named exports for modules and React components.
+- Use `import type` for type-only imports.
+- Prefer workspace imports (e.g. `@plop/db`, `@plop/supabase/*`) over deep relative paths across workspaces.
+
+## Types
+
+- Avoid `any` in new code; if you must use it, confine it to the narrowest boundary and add a comment describing why.
+- Prefer narrowing/refinement over casting.
+- Keep input validation at boundaries (server actions, API procedures, env parsing) with Zod.
+
+## Errors and logging
+
+- For user-facing surfaces, return/throw errors with actionable messages.
+- Prefer structured logging via `@plop/logger` (objects) over string concatenation.
+

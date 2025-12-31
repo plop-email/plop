@@ -1,0 +1,29 @@
+---
+globs: "src/trpc/**/*.{ts,tsx}"
+alwaysApply: false
+description: How to use tRPC + TanStack Query in apps/app
+---
+# tRPC Usage (apps/app)
+
+## Client components
+
+- Use `useTRPC()` from `src/trpc/client.tsx` to access typed query/mutation options.
+- Prefer TanStack Query hooks with the generated options:
+
+```tsx
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
+
+export function TeamMembersCount() {
+  const trpc = useTRPC();
+  const { data } = useQuery(trpc.team.members.queryOptions());
+
+  return <div>{data ? `${data.length} members` : "—"}</div>;
+}
+```
+
+## Server components
+
+- Use `prefetch(...)` + `<HydrateClient>` from `src/trpc/server.tsx` for server-side prefetch + client hydration.

@@ -1,0 +1,23 @@
+---
+globs: "src/trpc/**/*.ts"
+alwaysApply: false
+description: tRPC router and procedure conventions for apps/api
+---
+# tRPC Conventions (apps/api)
+
+## Router structure
+
+- Root router: `src/trpc/routers/_app.ts`
+- Feature routers: `src/trpc/routers/*`
+
+## Procedures
+
+- Use `protectedProcedure` for any route that requires an authenticated user.
+- Validate inputs with Zod via `.input(...)`.
+- Prefer throwing `TRPCError` with a clear code/message for expected failures (not generic `Error`).
+
+## Drizzle usage
+
+- Prefer `select/insert/update(...).returning()` patterns.
+- Keep user scoping explicit in queries.
+

@@ -1,0 +1,16 @@
+---
+description: Conventions for @plop/analytics (OpenPanel)
+globs:
+  - "packages/analytics/**/*.{ts,tsx}"
+alwaysApply: false
+---
+# `@plop/analytics`
+
+OpenPanel client + server helpers for tracking events.
+
+## Conventions
+
+- Keep event names stable and human-readable.
+- In non-production, prefer logging instead of actually sending events.
+- On the server, use `waitUntil(...)` for fire-and-forget tracking (don’t block the response).
+

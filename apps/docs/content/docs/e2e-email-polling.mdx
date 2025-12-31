@@ -1,0 +1,95 @@
+---
+title: "E2E: pull latest email"
+description: How to fetch the newest matching email for tests (OTP, links, tokens).
+---
+
+Use the `GET /v1/messages/latest` endpoint to fetch the most recent email that matches your filters. This endpoint is designed for E2E polling and ignores the `limit` parameter.
+
+## Typical flow
+
+<Steps>
+<Step>
+**Send the email**
+
+Trigger the action that sends the email (login, invite, password reset, etc.).
+</Step>
+
+<Step>
+**Poll for the latest message**
+
+Filter by mailbox, tag, or subject to reduce noise.
+</Step>
+
+<Step>
+**Extract the token**
+
+Parse `data.textContent` or `data.htmlContent` and capture the OTP or link.
+</Step>
+</Steps>
+
+## Example curl
+
+```bash
+curl -H "Authorization: Bearer <API_KEY>" \
+  "https://api.plop.email/v1/messages/latest?mailbox=qa&tag=login&since=2025-12-24T00:00:00.000Z"
+```
+
+## Playwright: wait for email + extract OTP
+
+```ts
+import { expect, test, type APIRequestContext } from "@playwright/test";
+
+const OTP_REGEX = /\b(\d{6})\b/;
+
+async function latestOtp(request: APIRequestContext) {
+  const apiUrl = process.env.PLOP_API_URL ?? "https://api.plop.email";
+  const apiKey = process.env.PLOP_API_KEY ?? "<API_KEY>";
+  const qs = new URLSearchParams({
+    mailbox: "qa",
+    tag: "login",
+    since: new Date().toISOString(),
+  });
+
+  const res = await request.get(
+    `${apiUrl}/v1/messages/latest?${qs.toString()}`,
+    { headers: { Authorization: `Bearer ${apiKey}` } },
+  );
+
+  if (res.status() === 404) return null;
+  if (!res.ok()) throw new Error(`Email API error: ${res.status()}`);
+
+  const { data } = (await res.json()) as {
+    data: { textContent: string | null; htmlContent: string | null };
+  };
+
+  const body = data.textContent ?? data.htmlContent ?? "";
+  return body.match(OTP_REGEX)?.[1] ?? null;
+}
+
+test("login via OTP", async ({ page, request }) => {
+  // trigger email here (signup/login flow)
+
+  let otp: string | null = null;
+  await expect
+    .poll(async () => {
+      otp = await latestOtp(request);
+      return otp;
+    }, { timeout: 60_000, intervals: [1000, 2000, 3000] })
+    .toMatch(/\d{6}/);
+
+  await page.fill("[name=otp]", otp!);
+});
+```
+
+## Example response fields
+
+- `data.subject`
+- `data.textContent`
+- `data.htmlContent`
+- `data.receivedAt`
+
+## Notes
+
+- Prefer `since` to avoid picking up older messages from previous tests.
+- If you control tags, use `support+login@...` and filter by `tag=login`.
+- Mailbox scoped keys must match the mailbox filter (if provided).

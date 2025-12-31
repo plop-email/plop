@@ -1,0 +1,23 @@
+---
+description: Database patterns for @plop/db (Drizzle + Postgres)
+globs:
+  - "packages/db/**/*.ts"
+alwaysApply: false
+---
+# `@plop/db`
+
+Drizzle schema + database client.
+
+## Where things live
+
+- Schema: `packages/db/src/schema.ts`
+- Client: `packages/db/src/client.ts` (reads `DATABASE_URL`)
+
+## Conventions
+
+- Keep schema changes consistent with the actual Postgres schema (Supabase migrations live in `packages/supabase/supabase/migrations/`).
+- Prefer explicit columns and consistent naming:
+  - SQL tables/columns: `snake_case`
+  - Drizzle fields: `camelCase`
+- Use `uuid` primary keys and `createdAt`/`updatedAt` timestamps consistently.
+
