@@ -6,6 +6,16 @@ import { getPageImage, source } from "@/lib/source";
 export const revalidate = false;
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://docs.plop.email";
 
+const getLogo = async () => {
+  try {
+    const response = await fetch(new URL("/icon.png", baseUrl));
+    if (!response.ok) return null;
+    return await response.blob();
+  } catch {
+    return null;
+  }
+};
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ slug: string[] }> },
@@ -14,9 +24,7 @@ export async function GET(
   const page = source.getPage(slug.slice(0, -1));
   if (!page) notFound();
 
-  const logo = await fetch(new URL("/icon.png", baseUrl)).then((res) =>
-    res.blob(),
-  );
+  const logo = await getLogo();
 
   return new ImageResponse(
     <div
@@ -57,8 +65,27 @@ export async function GET(
             justifyContent: "center",
           }}
         >
-          {/* biome-ignore lint/performance/noImgElement: ImageResponse doesn't support next/image. */}
-          <img src={logo} width={48} height={48} alt="Plop" />
+          {logo ? (
+            // biome-ignore lint/performance/noImgElement: ImageResponse doesn't support next/image.
+            <img src={logo} width={48} height={48} alt="Plop" />
+          ) : (
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "12px",
+                background: "linear-gradient(135deg, #3b82f6, #10b981)",
+                color: "#0b0b0c",
+                fontWeight: 700,
+                fontSize: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              P
+            </div>
+          )}
         </div>
         <span style={{ color: "#e4e4e7", fontSize: "22px", fontWeight: 500 }}>
           Plop Docs

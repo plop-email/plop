@@ -17,6 +17,7 @@
       "!**/cache",
       "!**/.turbo",
       "!**/.react-email",
+      "!**/.react-email/**",
       "!**/.source",
       "!**/.content-collections",
       "!**/.trigger",
@@ -58,6 +59,8 @@
     "includes": [
       "**",
       "!**/.next",
+      "!**/.react-email",
+      "!**/.react-email/**",
       "!**/.source",
       "!**/.content-collections",
       "!**/node_modules"
