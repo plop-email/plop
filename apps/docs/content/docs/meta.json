@@ -11,6 +11,7 @@
     "e2e-email-polling",
     "inbox-webhook-contract",
     "inbox-worker-admin",
+    "inbox-worker-deployment",
     "---Operations---",
     "env-and-secrets",
     "flyio-deployment",
