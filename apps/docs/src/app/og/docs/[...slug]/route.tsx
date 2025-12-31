@@ -4,13 +4,13 @@ import { ImageResponse } from "next/og";
 import { getPageImage, source } from "@/lib/source";
 
 export const revalidate = false;
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://docs.plop.email";
-
 const getLogo = async () => {
   try {
-    const response = await fetch(new URL("/icon.png", baseUrl));
+    const response = await fetch(
+      new URL("../../../../../public/icon.png", import.meta.url),
+    );
     if (!response.ok) return null;
-    return await response.blob();
+    return new Blob([await response.arrayBuffer()], { type: "image/png" });
   } catch {
     return null;
   }
