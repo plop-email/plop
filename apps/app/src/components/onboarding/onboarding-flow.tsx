@@ -23,6 +23,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { useTRPC } from "@/trpc/client";
 import {
   clearTrialPlanCookie,
@@ -371,7 +372,7 @@ export function OnboardingFlow() {
 
     try {
       if (!skip && trimmedEmail.length > 0) {
-        const emailOk = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(trimmedEmail);
+        const emailOk = z.string().email().safeParse(trimmedEmail).success;
         if (!emailOk) {
           setError("Enter a valid email address.");
           return;
