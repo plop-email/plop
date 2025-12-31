@@ -1,17 +1,28 @@
+import { createClient } from "@plop/supabase/server";
+import { cookies } from "next/headers";
 import Image from "next/image";
-import { SignUpForm } from "@/components/sign-up-form";
+import { redirect } from "next/navigation";
 import { GoogleSignin } from "@/components/google-signin";
+import { SignUpForm } from "@/components/sign-up-form";
 import {
   PREFERRED_AUTH_COOKIE_NAME,
   parsePreferredAuthCookie,
 } from "@/utils/preferred-auth-cookie";
-import { cookies } from "next/headers";
 
 export const metadata = {
   title: "Sign Up",
 };
 
 export default async function Page() {
+  // Redirect to home if already authenticated
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    redirect("/");
+  }
+
   const cookieStore = await cookies();
   const preferred = parsePreferredAuthCookie(
     cookieStore.get(PREFERRED_AUTH_COOKIE_NAME)?.value,
