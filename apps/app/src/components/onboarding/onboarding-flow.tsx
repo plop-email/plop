@@ -80,6 +80,7 @@ export function OnboardingFlow() {
     name: string;
     domain: string;
   } | null>(null);
+  const [starterMailboxAttempted, setStarterMailboxAttempted] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -233,10 +234,22 @@ export function OnboardingFlow() {
 
   useEffect(() => {
     if (step !== "starter") return;
+    setStarterMailboxAttempted(false);
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== "starter") return;
     if (starterMailbox) return;
+    if (starterMailboxAttempted) return;
     if (ensureStarterMailboxMutation.isPending) return;
+    setStarterMailboxAttempted(true);
     ensureStarterMailboxMutation.mutate();
-  }, [ensureStarterMailboxMutation, starterMailbox, step]);
+  }, [
+    ensureStarterMailboxMutation,
+    starterMailbox,
+    starterMailboxAttempted,
+    step,
+  ]);
 
   useEffect(() => {
     if (step !== "mailbox") return;
@@ -361,6 +374,13 @@ export function OnboardingFlow() {
     if (availability?.available === false) return;
     setError(null);
     createMailboxMutation.mutate({ name: normalizedMailbox });
+  };
+
+  const handleStarterRetry = () => {
+    if (ensureStarterMailboxMutation.isPending) return;
+    setError(null);
+    setStarterMailboxAttempted(true);
+    ensureStarterMailboxMutation.mutate();
   };
 
   const handleInviteFinish = async (skip?: boolean) => {
@@ -586,6 +606,19 @@ export function OnboardingFlow() {
                   </p>
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
+                {!starterMailbox && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleStarterRetry}
+                    disabled={ensureStarterMailboxMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {ensureStarterMailboxMutation.isPending
+                      ? "Retrying..."
+                      : "Try again"}
+                  </Button>
+                )}
               </CardContent>
               <CardFooter className="justify-end">
                 <Button
