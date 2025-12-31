@@ -2,13 +2,22 @@
 
 import { createClient } from "@plop/supabase/client";
 import { Button } from "@plop/ui/button";
+import { cn } from "@plop/ui/cn";
 import { Input } from "@plop/ui/input";
 import { Label } from "@plop/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  type PreferredAuthMethod,
+  setPreferredAuthCookie,
+} from "@/utils/preferred-auth-cookie";
 
-export function LoginForm() {
+type LoginFormProps = {
+  preferredAuthMethod?: PreferredAuthMethod | null;
+};
+
+export function LoginForm({ preferredAuthMethod }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +41,7 @@ export function LoginForm() {
       return;
     }
 
+    setPreferredAuthCookie("password");
     router.push("/");
     router.refresh();
   };
@@ -74,8 +84,18 @@ export function LoginForm() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Signing in..." : "Sign in"}
+      <Button
+        type="submit"
+        className={cn(
+          "w-full",
+          preferredAuthMethod === "password" && "justify-between",
+        )}
+        disabled={isLoading}
+      >
+        <span>{isLoading ? "Signing in..." : "Sign in"}</span>
+        {preferredAuthMethod === "password" && (
+          <span className="text-xs text-muted-foreground">Last used</span>
+        )}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

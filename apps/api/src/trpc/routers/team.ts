@@ -10,6 +10,15 @@ function requireOwner(role: "owner" | "member") {
   }
 }
 
+function normalizeRows<T>(result: unknown): T[] {
+  if (Array.isArray(result)) return result as T[];
+  if (result && typeof result === "object" && "rows" in result) {
+    const rows = (result as { rows?: T[] }).rows;
+    if (Array.isArray(rows)) return rows;
+  }
+  return [];
+}
+
 const trialPlanSchema = z.enum(["starter", "pro"]);
 
 export const teamRouter = createTRPCRouter({
@@ -149,6 +158,43 @@ export const teamRouter = createTRPCRouter({
       .orderBy(desc(teamInvites.createdAt));
   }),
 
+  invitesByEmail: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.user?.email) return [];
+
+    const membershipDb = ctx.db.usePrimaryOnly
+      ? ctx.db.usePrimaryOnly()
+      : ctx.db;
+    const [membership] = await membershipDb
+      .select({ id: teamMemberships.id })
+      .from(teamMemberships)
+      .where(eq(teamMemberships.userId, ctx.user.id))
+      .limit(1);
+
+    if (membership) return [];
+
+    const result = await ctx.db.execute(
+      sql`select * from public.list_invites_for_current_user()`,
+    );
+
+    const rows = normalizeRows<{
+      id: string;
+      email: string;
+      role: "owner" | "member";
+      created_at: Date;
+      team_id: string;
+      team_name: string;
+    }>(result);
+
+    return rows.map((row) => ({
+      id: row.id as string,
+      email: row.email as string,
+      role: row.role as "owner" | "member",
+      createdAt: row.created_at as Date,
+      teamId: row.team_id as string,
+      teamName: row.team_name as string,
+    }));
+  }),
+
   invite: teamProcedure
     .input(
       z.object({
@@ -183,6 +229,63 @@ export const teamRouter = createTRPCRouter({
         .returning();
 
       return invite;
+    }),
+
+  acceptInvite: protectedProcedure
+    .input(z.object({ inviteId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user?.email) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Email is required to accept an invite.",
+        });
+      }
+
+      try {
+        const result = await ctx.db.execute(
+          sql`select public.accept_team_invite(${input.inviteId}) as team_id`,
+        );
+        const rows = normalizeRows<{ team_id: string }>(result);
+        const teamId = rows[0]?.team_id as string | undefined;
+        if (!teamId) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Invite not found.",
+          });
+        }
+        return { teamId };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Unable to accept invite.",
+        });
+      }
+    }),
+
+  declineInvite: protectedProcedure
+    .input(z.object({ inviteId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user?.email) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Email is required to decline an invite.",
+        });
+      }
+
+      try {
+        const result = await ctx.db.execute(
+          sql`select public.decline_team_invite(${input.inviteId}) as ok`,
+        );
+        const rows = normalizeRows<{ ok: boolean }>(result);
+        return { ok: Boolean(rows[0]?.ok) };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Unable to decline invite.",
+        });
+      }
     }),
 
   deleteInvite: teamProcedure

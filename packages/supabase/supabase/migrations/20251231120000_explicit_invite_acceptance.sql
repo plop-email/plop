@@ -1,54 +1,29 @@
--- Team invites
+-- Explicit invite acceptance and onboarding flow updates
 
-create table public.team_invites (
-  id uuid primary key default gen_random_uuid(),
-  team_id uuid not null references public.teams(id) on delete cascade,
-  email text not null,
-  role public.team_role not null default 'member',
-  invited_by uuid not null references public.users(id) on delete cascade,
-  created_at timestamp with time zone not null default now(),
-  accepted_at timestamp with time zone
-);
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.users (id, email, full_name, avatar_url)
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data ->> 'full_name',
+    new.raw_user_meta_data ->> 'avatar_url'
+  );
 
-create index idx_team_invites_team_id on public.team_invites(team_id);
-create index idx_team_invites_email on public.team_invites(email);
+  return new;
+end;
+$$;
 
-alter table public.team_invites enable row level security;
-
-create policy select_invites_for_team_owners on public.team_invites
-for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.team_memberships self
-    where self.team_id = team_invites.team_id
-      and self.user_id = auth.uid()
-      and self.role = 'owner'
-  )
-);
-
-create policy manage_invites_for_team_owners on public.team_invites
-for all
-to authenticated
-using (
-  exists (
-    select 1
-    from public.team_memberships self
-    where self.team_id = team_invites.team_id
-      and self.user_id = auth.uid()
-      and self.role = 'owner'
-  )
-)
-with check (
-  exists (
-    select 1
-    from public.team_memberships self
-    where self.team_id = team_invites.team_id
-      and self.user_id = auth.uid()
-      and self.role = 'owner'
-  )
-);
+drop policy if exists select_team_for_invited_users on public.teams;
+drop policy if exists select_invites_for_invited_users on public.team_invites;
+drop policy if exists update_invites_for_invited_users on public.team_invites;
+drop policy if exists delete_invites_for_invited_users on public.team_invites;
+drop policy if exists accept_memberships_for_invited_users on public.team_memberships;
 
 create or replace function public.list_invites_for_current_user()
 returns table (

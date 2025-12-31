@@ -49,6 +49,7 @@ using (
   public.is_team_member(teams.id)
 );
 
+
 create policy update_team_for_owners on public.teams
 for update
 to authenticated
