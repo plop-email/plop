@@ -3,8 +3,22 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Footer } from "@/components/layout/footer";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { SidebarInset, SidebarProvider } from "@plop/ui/sidebar";
+import { TRPCClientError } from "@trpc/client";
 import { getQueryClient, HydrateClient, trpc } from "@/trpc/server";
 import { TrialLockModal } from "@/components/billing/trial-lock-modal";
+
+function isUnauthorized(error: unknown) {
+  if (error instanceof TRPCClientError) {
+    return error.data?.code === "UNAUTHORIZED";
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const data = (error as { data?: { code?: string } }).data;
+    return data?.code === "UNAUTHORIZED";
+  }
+
+  return false;
+}
 
 export default async function Layout(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
@@ -42,7 +56,11 @@ export default async function Layout(props: { children: React.ReactNode }) {
         </SidebarProvider>
       </HydrateClient>
     );
-  } catch {
-    redirect("/login");
+  } catch (error) {
+    if (isUnauthorized(error)) {
+      redirect("/login");
+    }
+
+    throw error;
   }
 }
