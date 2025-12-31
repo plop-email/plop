@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./global.css";
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://docs.plop.email";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),

@@ -2,8 +2,8 @@ import { z } from "zod";
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3003),
-  ALLOWED_API_ORIGINS: z.string().optional(),
-  APP_URL: z.string().url(),
+  ALLOWED_API_ORIGINS: z.string().default("https://app.plop.email"),
+  APP_URL: z.string().url().default("https://app.plop.email"),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_KEY: z.string().min(1),
   SUPABASE_JWT_SECRET: z.string().min(1),
@@ -13,7 +13,7 @@ const envSchema = z.object({
   FLY_REGION: z.string().optional(),
   UPSTASH_REDIS_REST_URL: z.string().url(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
-  INBOX_ROOT_DOMAIN: z.string().min(1),
+  INBOX_ROOT_DOMAIN: z.string().min(1).default("in.plop.email"),
   INBOX_WEBHOOK_SECRET: z.string().min(1).optional(),
   POLAR_ACCESS_TOKEN: z.string().min(1).optional(),
   POLAR_ENVIRONMENT: z.enum(["production", "sandbox"]).default("sandbox"),

@@ -1,0 +1,102 @@
+---
+title: Fly.io deployment
+description: Deploy the API to Fly.io with the Bun + Turbo Docker image.
+---
+
+## What gets deployed
+
+Fly.io is used to run the API service (`apps/api`) as a container built from the monorepo.
+The deployment uses Turbo prune to keep the image lean while still including shared packages.
+
+## Files to know
+
+- `apps/api/fly.toml` — Fly app configuration (region, port, health checks, scaling).
+- `apps/api/Dockerfile` — multi-stage Bun build using `turbo prune @plop/api --docker`.
+- `apps/api/.dockerignore` — trims the build context.
+
+## Prerequisites
+
+- Install the Fly CLI (`flyctl`) and log in.
+- Confirm you have all required API secrets (see `env-and-secrets`).
+
+## Configure the Fly app
+
+Update `apps/api/fly.toml` before the first deploy:
+
+- `app` — set this to your Fly app name.
+- `primary_region` — pick the region closest to your database or users.
+- `min_machines_running` / `[[vm]]` — adjust for your availability + budget.
+- `PORT` / `internal_port` — keep this aligned with the API port (defaults to `3003`).
+
+## Set required secrets
+
+From the repo root, set the API environment variables on Fly. Replace the values below with your production secrets (for local dev, use the `.env` examples in `env-and-secrets`).
+
+```bash
+fly secrets set --config apps/api/fly.toml \
+  APP_URL=https://app.plop.email \
+  NEXT_PUBLIC_SUPABASE_URL=... \
+  SUPABASE_SERVICE_KEY=... \
+  SUPABASE_JWT_SECRET=... \
+  DATABASE_PRIMARY_URL=... \
+  DATABASE_LHR_URL=... \
+  DATABASE_SESSION_POOLER=... \
+  UPSTASH_REDIS_REST_URL=... \
+  UPSTASH_REDIS_REST_TOKEN=... \
+  INBOX_ROOT_DOMAIN=in.plop.email \
+  INBOX_WEBHOOK_SECRET=... \
+  ALLOWED_API_ORIGINS=https://app.plop.email
+```
+
+Optional billing variables (only if Polar billing is enabled):
+
+```bash
+fly secrets set --config apps/api/fly.toml \
+  POLAR_ACCESS_TOKEN=... \
+  POLAR_ENVIRONMENT=production \
+  POLAR_WEBHOOK_SECRET=... \
+  POLAR_STARTER_MONTHLY_PRODUCT_ID=... \
+  POLAR_STARTER_YEARLY_PRODUCT_ID=... \
+  POLAR_PRO_MONTHLY_PRODUCT_ID=... \
+  POLAR_PRO_YEARLY_PRODUCT_ID=... \
+  POLAR_ENTERPRISE_MONTHLY_PRODUCT_ID=... \
+  POLAR_ENTERPRISE_YEARLY_PRODUCT_ID=...
+```
+
+<Callout type="info">
+Fly automatically injects `FLY_REGION` at runtime. The API uses this to route reads to a nearby replica when available.
+</Callout>
+
+## Deploy
+
+Run the deploy from the repo root:
+
+```bash
+fly deploy --config apps/api/fly.toml
+```
+
+The Dockerfile sets `NODE_ENV=production` and runs the API with Bun.
+
+## Verify
+
+```bash
+fly status --config apps/api/fly.toml
+fly logs --config apps/api/fly.toml
+curl https://<your-app>.fly.dev/health
+```
+
+## Scaling and regions
+
+Common operations:
+
+```bash
+fly scale count 2 --config apps/api/fly.toml
+fly scale memory 1024 --config apps/api/fly.toml
+fly regions add lhr --config apps/api/fly.toml
+```
+
+If you add regions, ensure your read replica URLs (`DATABASE_LHR_URL`, `DATABASE_SESSION_POOLER`) are set appropriately.
+
+<Callout type="warning">
+Keep `INBOX_WEBHOOK_SECRET` and the worker `WEBHOOK_AUTH_TOKEN` identical, or webhook delivery will return 401s.
+</Callout>

@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
 import { getPageImage, source } from "@/lib/source";
 
 export const revalidate = false;
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://docs.plop.email";
 
 export async function GET(
   _req: NextRequest,

@@ -17,7 +17,7 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_URL: z.string(),
   },
   client: {
-    NEXT_PUBLIC_API_URL: z.string().url(),
+    NEXT_PUBLIC_API_URL: z.string().url().default("https://api.plop.email"),
     NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string(),
     NEXT_PUBLIC_SUPABASE_URL: z.string(),
