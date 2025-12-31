@@ -11,6 +11,12 @@ import { inboxWebhookHandler } from "./webhooks/inbox";
 import { polarWebhookHandler } from "./webhooks/polar";
 
 const app = new OpenAPIHono();
+const openApiServerUrl = env.FLY_REGION
+  ? "https://api.plop.email"
+  : `http://localhost:${env.PORT}`;
+const openApiServerDescription = env.FLY_REGION
+  ? "Production server"
+  : "Local development server";
 
 app.use(
   "*",
@@ -48,8 +54,8 @@ app.doc31("/openapi", {
   },
   servers: [
     {
-      url: "http://localhost:3003",
-      description: "Local development server",
+      url: openApiServerUrl,
+      description: openApiServerDescription,
     },
   ],
   tags: [
