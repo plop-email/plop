@@ -4,7 +4,6 @@ import { Footer } from "@/components/layout/footer";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { SidebarInset, SidebarProvider } from "@plop/ui/sidebar";
 import { getQueryClient, HydrateClient, trpc } from "@/trpc/server";
-import { OnboardingModal } from "@/components/onboarding/onboarding-modal";
 import { TrialLockModal } from "@/components/billing/trial-lock-modal";
 
 export default async function Layout(props: { children: React.ReactNode }) {
@@ -17,7 +16,12 @@ export default async function Layout(props: { children: React.ReactNode }) {
     const membership = await queryClient.fetchQuery(
       trpc.team.membership.queryOptions(),
     );
-    if (!membership) redirect("/teams/create");
+    if (!membership) {
+      const invites = await queryClient.fetchQuery(
+        trpc.team.invitesByEmail.queryOptions(),
+      );
+      redirect(invites?.length ? "/teams" : "/onboarding");
+    }
 
     return (
       <HydrateClient>
@@ -34,7 +38,6 @@ export default async function Layout(props: { children: React.ReactNode }) {
             </div>
             <MobileBottomNav />
           </SidebarInset>
-          <OnboardingModal />
           <TrialLockModal />
         </SidebarProvider>
       </HydrateClient>

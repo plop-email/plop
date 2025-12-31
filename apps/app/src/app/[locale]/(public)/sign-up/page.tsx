@@ -1,11 +1,22 @@
 import Image from "next/image";
 import { SignUpForm } from "@/components/sign-up-form";
+import { GoogleSignin } from "@/components/google-signin";
+import {
+  PREFERRED_AUTH_COOKIE_NAME,
+  parsePreferredAuthCookie,
+} from "@/utils/preferred-auth-cookie";
+import { cookies } from "next/headers";
 
 export const metadata = {
   title: "Sign Up",
 };
 
-export default function Page() {
+export default async function Page() {
+  const cookieStore = await cookies();
+  const preferred = parsePreferredAuthCookie(
+    cookieStore.get(PREFERRED_AUTH_COOKIE_NAME)?.value,
+  );
+
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-sm space-y-6">
@@ -22,7 +33,23 @@ export default function Page() {
           </p>
         </div>
 
-        <SignUpForm />
+        <SignUpForm preferredAuthMethod={preferred} />
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        <GoogleSignin
+          label="Sign up with Google"
+          showLastUsed={preferred === "google"}
+        />
       </div>
     </div>
   );

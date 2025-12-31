@@ -6,24 +6,7 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare
-  invite record;
 begin
-  -- Resolve team from an invite (if present), otherwise delay team creation.
-  select id, team_id, role
-  into invite
-  from public.team_invites
-  where email = new.email
-    and accepted_at is null
-  order by created_at
-  limit 1;
-
-  if invite.id is not null then
-    update public.team_invites
-    set accepted_at = now()
-    where id = invite.id;
-  end if;
-
   insert into public.users (id, email, full_name, avatar_url)
   values (
     new.id,
@@ -31,11 +14,6 @@ begin
     new.raw_user_meta_data ->> 'full_name',
     new.raw_user_meta_data ->> 'avatar_url'
   );
-
-  if invite.id is not null then
-    insert into public.team_memberships (team_id, user_id, role)
-    values (invite.team_id, new.id, invite.role);
-  end if;
 
   return new;
 end;
