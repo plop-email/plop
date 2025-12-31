@@ -1,10 +1,12 @@
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { GoogleSignin } from "@/components/google-signin";
 import { LoginForm } from "@/components/login-form";
 import {
   PREFERRED_AUTH_COOKIE_NAME,
   parsePreferredAuthCookie,
 } from "@/utils/preferred-auth-cookie";
+import { createClient } from "@plop/supabase/server";
 import { cookies } from "next/headers";
 
 export const metadata = {
@@ -12,6 +14,15 @@ export const metadata = {
 };
 
 export default async function Page() {
+  // Redirect to home if already authenticated
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    redirect("/");
+  }
+
   const cookieStore = await cookies();
   const preferred = parsePreferredAuthCookie(
     cookieStore.get(PREFERRED_AUTH_COOKIE_NAME)?.value,
