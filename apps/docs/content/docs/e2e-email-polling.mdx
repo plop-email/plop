@@ -29,6 +29,15 @@ Parse `data.textContent` or `data.htmlContent` and capture the OTP or link.
 
 ## Example curl
 
+Local development:
+
+```bash
+curl -H "Authorization: Bearer <API_KEY>" \
+  "http://localhost:3003/v1/messages/latest?mailbox=qa&tag=login&since=2025-12-24T00:00:00.000Z"
+```
+
+Production:
+
 ```bash
 curl -H "Authorization: Bearer <API_KEY>" \
   "https://api.plop.email/v1/messages/latest?mailbox=qa&tag=login&since=2025-12-24T00:00:00.000Z"
@@ -42,7 +51,8 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 const OTP_REGEX = /\b(\d{6})\b/;
 
 async function latestOtp(request: APIRequestContext) {
-  const apiUrl = process.env.PLOP_API_URL ?? "https://api.plop.email";
+  const apiUrl = process.env.PLOP_API_URL ?? "http://localhost:3003";
+  // Set PLOP_API_URL=https://api.plop.email for production runs.
   const apiKey = process.env.PLOP_API_KEY ?? "<API_KEY>";
   const qs = new URLSearchParams({
     mailbox: "qa",

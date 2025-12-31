@@ -13,6 +13,7 @@
     "inbox-worker-admin",
     "---Operations---",
     "env-and-secrets",
+    "flyio-deployment",
     "---Product Guides---",
     "app-domain-addition"
   ]

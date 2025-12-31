@@ -8,6 +8,12 @@
     <br />
     <a href="https://plop.email">Landing</a>
     ·
+    <a href="https://app.plop.email">App</a>
+    ·
+    <a href="https://docs.plop.email">Docs</a>
+    ·
+    <a href="https://api.plop.email">API</a>
+    ·
     <a href="https://github.com/plop-email/plop/issues">Issues</a>
   </p>
 </p>
@@ -31,6 +37,12 @@ Documentation lives in `apps/docs` and is rendered with Fumadocs. Run it with:
 ```sh
 bun dev:docs
 ```
+
+### Hosted endpoints
+
+- App: https://app.plop.email
+- Docs: https://docs.plop.email
+- API: https://api.plop.email
 
 ## Architecture
 
