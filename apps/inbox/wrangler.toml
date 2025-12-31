@@ -23,7 +23,7 @@ CLOUDFLARE_ZONE_ID = "0c4e890990bba87dc294c4cc5bbe06a7"
 
 # Optional: POST metadata to your main service when an email is received.
 # If set and the webhook returns a 2xx, the message is moved from `unprocessed/` to `processed/`.
-WEBHOOK_URL = "api.plop.email/webhooks/inbox"
+WEBHOOK_URL = "https://api.plop.email/webhooks/inbox"
 WEBHOOK_TIMEOUT_MS = "10000"
 
 [[r2_buckets]]

@@ -1,0 +1,86 @@
+---
+title: Inbox worker deployment
+description: Deploy the Cloudflare Email Routing worker with the correct configuration.
+---
+
+## Prerequisites
+
+- A Cloudflare zone for your apex domain (example: `plop.email`).
+- Email Routing enabled for the zone.
+- Cloudflare is the authoritative DNS provider for the zone.
+- An R2 bucket for raw email storage.
+- A Cloudflare API token with:
+  - Zone -> Email Routing -> Edit
+  - Zone -> DNS -> Edit
+
+## Configure `wrangler.toml`
+
+Update `apps/inbox/wrangler.toml` before deploy:
+
+- `EMAIL_DOMAIN` - inbound root domain (example: `in.plop.email`).
+- `EMAIL_WORKER_NAME` - deployed worker name used by the catch-all rule.
+- `CLOUDFLARE_ZONE_ID` - zone id for the apex domain (`plop.email`).
+- `WEBHOOK_URL` - full URL to the API webhook (example: `https://api.plop.email/webhooks/inbox`).
+- `WEBHOOK_TIMEOUT_MS` - optional timeout override.
+- `INBOX_STORAGE` bucket binding - match the R2 bucket name.
+
+<Callout type="info">
+`workers_dev = true` keeps a `workers.dev` URL available for the admin API. If you disable it, add a custom domain or route or the admin endpoints will not be reachable.
+</Callout>
+
+## Create the R2 bucket
+
+```bash
+cd apps/inbox
+bunx wrangler r2 bucket create inbox-emails
+```
+
+## Set secrets
+
+```bash
+cd apps/inbox
+bunx wrangler secret put ADMIN_TOKEN
+bunx wrangler secret put CLOUDFLARE_API_TOKEN
+bunx wrangler secret put WEBHOOK_AUTH_TOKEN
+```
+
+<Callout type="warning">
+`WEBHOOK_AUTH_TOKEN` must match `INBOX_WEBHOOK_SECRET` on the API or webhook delivery will return 401.
+</Callout>
+
+## Deploy
+
+```bash
+cd apps/inbox
+bun run deploy
+```
+
+## Bootstrap routing and DNS
+
+After deploy, configure the catch-all rule and DNS records using the admin API helper:
+
+```bash
+cd apps/inbox
+WORKER_URL='https://<your-worker-host>' \
+ADMIN_TOKEN='<ADMIN_TOKEN>' \
+EMAIL_DOMAIN='in.plop.email' \
+./scripts/bootstrap.sh
+
+# Optional: enable a subdomain under the inbox root
+WORKER_URL='https://<your-worker-host>' \
+ADMIN_TOKEN='<ADMIN_TOKEN>' \
+SUBDOMAIN='company1' \
+./scripts/bootstrap.sh
+```
+
+## Verify
+
+- Health check: `curl https://<worker-host>/health`
+- Admin access: `curl -H "Authorization: Bearer <ADMIN_TOKEN>" "https://<worker-host>/admin/inboxes?limit=10"`
+- Send a test email to `hello@in.plop.email` and confirm it is stored in R2.
+
+## Common gotchas
+
+- `EMAIL_WORKER_NAME` must match the deployed worker name, including any env suffix.
+- `WEBHOOK_URL` must include the scheme (`https://`).
+- DNS must be managed by Cloudflare or Email Routing will not activate.
