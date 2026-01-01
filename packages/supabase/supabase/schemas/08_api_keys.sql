@@ -73,4 +73,4 @@ with check (
 
 grant usage on schema private to authenticated;
 grant insert on private.api_key_secrets to authenticated;
-grant select (id) on private.api_key_secrets to authenticated;
+grant select (id, key_hash) on private.api_key_secrets to authenticated;
