@@ -1,7 +1,10 @@
 import { teamInvites, teamMemberships, teams, users } from "@plop/db/schema";
+import { logger } from "@plop/logger";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
+import { env } from "../../env";
+import { sendTeamInviteEmail } from "../../utils/email";
 import { createTRPCRouter, protectedProcedure, teamProcedure } from "../init";
 
 function requireOwner(role: "owner" | "member") {
@@ -227,6 +230,37 @@ export const teamRouter = createTRPCRouter({
           invitedBy: ctx.user!.id,
         })
         .returning();
+
+      if (!invite) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create invite.",
+        });
+      }
+
+      const [team] = await ctx.db
+        .select({ name: teams.name })
+        .from(teams)
+        .where(eq(teams.id, ctx.teamId))
+        .limit(1);
+
+      const inviteUrl = new URL("/teams", env.APP_URL);
+      inviteUrl.searchParams.set("invite", invite.id);
+
+      try {
+        await sendTeamInviteEmail({
+          to: invite.email,
+          teamName: team?.name ?? "your team",
+          inviteUrl: inviteUrl.toString(),
+          invitedByName:
+            ctx.session?.user.full_name || ctx.user?.email || undefined,
+        });
+      } catch (error) {
+        logger.warn(
+          { error, inviteId: invite.id, email: invite.email },
+          "Failed to send team invite email",
+        );
+      }
 
       return invite;
     }),

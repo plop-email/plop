@@ -29,6 +29,9 @@ double_confirm_changes = true
 enable_confirmations = true
 enable_signup = true
 
+[functions.send-email]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

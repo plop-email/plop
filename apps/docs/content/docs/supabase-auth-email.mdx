@@ -1,0 +1,74 @@
+---
+title: Supabase auth emails
+description: Send Plop-branded auth emails through Supabase hooks.
+---
+
+Plop ships a Supabase `send-email` Edge Function that replaces the default Auth emails
+with Plop-branded templates (confirm email, magic link, reset password).
+
+## What you need
+
+- A Resend account and verified sending domain.
+- The Supabase CLI configured for your project.
+
+## Dependencies
+
+Supabase Edge Functions read dependencies from a per-function `deno.json`.
+We keep `packages/supabase/supabase/functions/send-email/deno.json` even though
+imports are pinned via `npm:` specifiers in the function code.
+
+## Deploy the Edge Function
+
+From the repo root:
+
+```bash
+supabase functions deploy send-email --project-ref <project-ref> \
+  --workdir packages/supabase
+```
+
+The function is configured with `verify_jwt = false` so Supabase Auth can call
+it without a user JWT. The config lives in
+`packages/supabase/supabase/config.toml` under `[functions.send-email]`.
+
+Then set secrets for the function (Supabase stores secrets encrypted and makes
+them available to Edge Functions at runtime):
+
+```bash
+supabase secrets set --project-ref <project-ref> \
+  RESEND_API_KEY=... \
+  SEND_EMAIL_HOOK_SECRET=... \
+  EMAIL_FROM="Plop <no-reply@mail.plop.email>" \
+  APP_URL="https://app.plop.email"
+```
+
+## Connect the Supabase Auth hook
+
+In the Supabase dashboard:
+
+1. Go to **Auth > Hooks**.
+2. Enable **Send email** and set the URL to:
+   `https://<project-ref>.supabase.co/functions/v1/send-email`
+3. Copy the hook secret and set it as `SEND_EMAIL_HOOK_SECRET` (see above). Use the
+   raw base64 secret value (strip the `whsec_` prefix if Supabase shows one).
+4. Ensure **Auth > URL Configuration** includes your app URL in the allowlist.
+
+## Local development
+
+- Ensure `auth.site_url` and `auth.additional_redirect_urls` in
+  `packages/supabase/supabase/config.toml` include `http://localhost:3000`.
+- Run local Supabase with `bun dev:supabase`.
+- Use the Auth UI to trigger a reset or signup flow and confirm the hook
+  is called by inspecting the function logs.
+
+## System emails (team invites)
+
+Team invites are sent from the API using the same templates. Configure in
+`apps/api/.env`:
+
+```bash
+RESEND_API_KEY=...
+RESEND_FROM="Plop <no-reply@mail.plop.email>"
+```
+
+Invites link to `${APP_URL}/teams?invite=<inviteId>`, and the invitee accepts
+inside the app after signing in.

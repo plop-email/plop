@@ -18,7 +18,7 @@ export default function Page() {
             Forgot password
           </h1>
           <p className="text-sm text-muted-foreground">
-            Enter your email and we'll send you a reset link.
+            Enter your email and we'll send a reset link and code.
           </p>
         </div>
 
