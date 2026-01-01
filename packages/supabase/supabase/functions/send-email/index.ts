@@ -34,7 +34,9 @@ function buildVerifyUrl({
       ? "recovery"
       : actionType === "login"
         ? "magiclink"
-        : actionType;
+        : actionType.startsWith("email_change")
+          ? "email_change"
+          : actionType;
 
   const verifyUrl = new URL(`${supabaseUrl}/auth/v1/verify`);
   verifyUrl.searchParams.set("token", tokenHash);
