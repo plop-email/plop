@@ -6,8 +6,9 @@ import { cn } from "@plop/ui/cn";
 import { Input } from "@plop/ui/input";
 import { Label } from "@plop/ui/label";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { parseAsString, useQueryState } from "nuqs";
 import {
   type PreferredAuthMethod,
   setPreferredAuthCookie,
@@ -27,8 +28,7 @@ export function SignUpForm({ preferredAuthMethod }: SignUpFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const planParam = searchParams.get("plan");
+  const [planParam] = useQueryState("plan", parseAsString);
   const supabase = createClient();
 
   useEffect(() => {

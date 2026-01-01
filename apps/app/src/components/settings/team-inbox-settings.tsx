@@ -23,6 +23,7 @@ import { useMemo } from "react";
 import { InboxDomainSheet } from "@/components/settings/inbox-domain-sheet";
 import { InboxMailboxSheet } from "@/components/settings/inbox-mailbox-sheet";
 import { useInboxSettingsParams } from "@/hooks/use-inbox-settings-params";
+import { useTeamMembership } from "@/hooks/use-team-membership";
 import { useTRPC } from "@/trpc/client";
 
 function formatDate(value: Date | string | null | undefined) {
@@ -36,8 +37,8 @@ export function TeamInboxSettings() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { setParams } = useInboxSettingsParams();
+  const { team, isOwner } = useTeamMembership();
 
-  const { data: team } = useQuery(trpc.team.current.queryOptions());
   const { data: mailboxes = [] } = useQuery(
     trpc.inbox.mailboxes.list.queryOptions(),
   );
@@ -55,7 +56,6 @@ export function TeamInboxSettings() {
     }),
   );
 
-  const isOwner = team?.role === "owner";
   const plan = team?.plan ?? DEFAULT_PLAN_TIER;
   const entitlements = getPlanEntitlements(plan);
   const mailboxLimit = entitlements.mailboxes;

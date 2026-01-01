@@ -26,13 +26,7 @@ export function InboxView() {
     trpc.inbox.mailboxes.list.queryOptions(),
   );
 
-  const mailboxFilter =
-    filter.mailbox &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      filter.mailbox,
-    )
-      ? filter.mailbox
-      : null;
+  const mailboxFilter = filter.mailbox ?? null;
   const tagFilters = Array.isArray(filter.tags) ? filter.tags : [];
   const startDate = filter.start ?? null;
   const endDate = filter.end ?? null;
@@ -69,12 +63,6 @@ export function InboxView() {
   });
 
   useEffect(() => {
-    if (filter.mailbox && !mailboxFilter) {
-      setFilter({ mailbox: null });
-    }
-  }, [filter.mailbox, mailboxFilter, setFilter]);
-
-  useEffect(() => {
     if (!mailboxFilter || mailboxes.length === 0) return;
     const exists = mailboxes.some((mailbox) => mailbox.id === mailboxFilter);
     if (!exists) {
@@ -91,22 +79,6 @@ export function InboxView() {
       setFilter({ tags: validTags.length > 0 ? validTags : null });
     }
   }, [setFilter, tagFilters, tagOptions, tagsLoading]);
-
-  useEffect(() => {
-    const updates: { start?: null; end?: null } = {};
-    if (
-      startDate &&
-      Number.isNaN(new Date(`${startDate}T00:00:00`).getTime())
-    ) {
-      updates.start = null;
-    }
-    if (endDate && Number.isNaN(new Date(`${endDate}T00:00:00`).getTime())) {
-      updates.end = null;
-    }
-    if (Object.keys(updates).length > 0) {
-      setFilter(updates);
-    }
-  }, [startDate, endDate, setFilter]);
 
   useEffect(() => {
     if (messages.length === 0) {

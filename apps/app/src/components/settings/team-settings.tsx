@@ -10,15 +10,16 @@ import {
   CardTitle,
 } from "@plop/ui/card";
 import { Input } from "@plop/ui/input";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useTeamMembership } from "@/hooks/use-team-membership";
 import { useTRPC } from "@/trpc/client";
 
 export function TeamSettings() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { team, isOwner } = useTeamMembership();
 
-  const { data: team } = useQuery(trpc.team.current.queryOptions());
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -46,7 +47,6 @@ export function TeamSettings() {
     );
   }
 
-  const isOwner = team.role === "owner";
   const canSave =
     isOwner && name.trim().length > 0 && !updateMutation.isPending;
 

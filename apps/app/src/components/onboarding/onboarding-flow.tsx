@@ -25,6 +25,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useTRPC } from "@/trpc/client";
+import type { onboardingSteps } from "@/hooks/use-onboarding-params";
+import {
+  onboardingPlanOptions,
+  useOnboardingParams,
+} from "@/hooks/use-onboarding-params";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useTeamMembership } from "@/hooks/use-team-membership";
 import {
   clearTrialPlanCookie,
   getTrialPlanCookie,
@@ -32,15 +39,13 @@ import {
 
 const mailboxPattern = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/i;
 
-type TrialPlan = "starter" | "pro";
+type TrialPlan = (typeof onboardingPlanOptions)[number];
 
-type OnboardingStep =
-  | "profile"
-  | "team"
-  | "plan"
-  | "starter"
-  | "mailbox"
-  | "invite";
+type OnboardingStep = (typeof onboardingSteps)[number];
+
+const isOnboardingPlan = (
+  value: string | null | undefined,
+): value is TrialPlan => value === "starter" || value === "pro";
 
 const stepIndexMap: Record<OnboardingStep, number> = {
   profile: 1,
@@ -62,18 +67,13 @@ export function OnboardingFlow() {
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { params, setParams } = useOnboardingParams();
 
-  const { data: user } = useQuery(trpc.user.me.queryOptions());
-  const { data: membership } = useQuery(trpc.team.membership.queryOptions());
-  const { data: team } = useQuery({
-    ...trpc.team.current.queryOptions(),
-    enabled: Boolean(membership),
-  });
+  const { data: user } = useCurrentUser();
+  const { membership, team, isOwner } = useTeamMembership();
 
-  const [step, setStep] = useState<OnboardingStep | null>(null);
   const [fullName, setFullName] = useState("");
   const [teamName, setTeamName] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<TrialPlan>("pro");
   const [mailboxName, setMailboxName] = useState("");
   const [debouncedMailbox, setDebouncedMailbox] = useState("");
   const [starterMailbox, setStarterMailbox] = useState<{
@@ -91,7 +91,6 @@ export function OnboardingFlow() {
     !team ||
     normalizedTeamName.length === 0 ||
     normalizedTeamName.toLowerCase() === "my team";
-  const isOwner = team?.role === "owner";
   const hasCompleted = Boolean(team?.onboardingCompletedAt);
   const shouldSelectPlan =
     !team?.subscriptionStatus || team.subscriptionStatus === "trialing";
@@ -101,10 +100,29 @@ export function OnboardingFlow() {
       ? "starter"
       : "mailbox";
 
-  useEffect(() => {
-    if (step !== null) return;
-    if (!user) return;
+  const requiredStep = useMemo<OnboardingStep | null>(() => {
+    if (!user) return null;
+    if (membership && !team) return null;
 
+    if (needsFullName) return "profile";
+    if (!team || needsTeamName) return "team";
+    if (shouldSelectPlan) return "plan";
+    if (team?.plan === "starter") return "starter";
+    return "mailbox";
+  }, [membership, needsFullName, needsTeamName, shouldSelectPlan, team, user]);
+
+  const isParamStepAllowed = useMemo(() => {
+    if (!params.step || !requiredStep) return false;
+    if (stepIndexMap[params.step] > stepIndexMap[requiredStep]) return false;
+    if (params.step === "starter" && team?.plan !== "starter") return false;
+    if (params.step === "mailbox" && team?.plan === "starter") return false;
+    return true;
+  }, [params.step, requiredStep, team?.plan]);
+
+  const resolvedStep = isParamStepAllowed ? params.step : requiredStep;
+
+  useEffect(() => {
+    if (!user) return;
     if (membership && !team) return;
 
     if (membership && team) {
@@ -114,36 +132,18 @@ export function OnboardingFlow() {
       }
     }
 
-    if (needsFullName) {
-      setStep("profile");
-      return;
+    if (requiredStep && (!params.step || !isParamStepAllowed)) {
+      setParams({ step: requiredStep });
     }
-
-    if (!team || needsTeamName) {
-      setStep("team");
-      return;
-    }
-
-    if (shouldSelectPlan) {
-      setStep("plan");
-      return;
-    }
-
-    if (team.plan === "starter") {
-      setStep("starter");
-      return;
-    }
-
-    setStep("mailbox");
   }, [
     hasCompleted,
     isOwner,
     membership,
-    needsFullName,
-    needsTeamName,
-    shouldSelectPlan,
+    isParamStepAllowed,
+    params.step,
+    requiredStep,
     router,
-    step,
+    setParams,
     team,
     user,
   ]);
@@ -154,35 +154,46 @@ export function OnboardingFlow() {
 
   useEffect(() => {
     setError(null);
-  }, [step]);
+  }, [resolvedStep]);
 
   useEffect(() => {
     if (team?.name) setTeamName(team.name);
   }, [team?.name]);
 
   useEffect(() => {
+    if (params.plan) return;
     const cookiePlan = getTrialPlanCookie();
     if (cookiePlan) {
-      setSelectedPlan(cookiePlan);
+      setParams({ plan: cookiePlan });
       return;
     }
-    if (team?.plan === "starter" || team?.plan === "pro") {
-      setSelectedPlan(team.plan);
+    if (isOnboardingPlan(team?.plan)) {
+      setParams({ plan: team.plan });
       return;
     }
-    const fallback: TrialPlan =
-      DEFAULT_PLAN_TIER === "starter" ? "starter" : "pro";
-    setSelectedPlan(fallback);
-  }, [team?.plan]);
+    setParams({
+      plan: DEFAULT_PLAN_TIER === "starter" ? "starter" : "pro",
+    });
+  }, [params.plan, setParams, team?.plan]);
+
+  const cookiePlan = getTrialPlanCookie();
+  const selectedPlan: TrialPlan =
+    params.plan ??
+    cookiePlan ??
+    (isOnboardingPlan(team?.plan)
+      ? team.plan
+      : DEFAULT_PLAN_TIER === "starter"
+        ? "starter"
+        : "pro");
 
   const updateUserMutation = useMutation(
     trpc.user.update.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: trpc.user.me.queryKey() });
         if (!team || needsTeamName) {
-          setStep("team");
+          setParams({ step: "team" });
         } else {
-          setStep(nextPostTeamStep);
+          setParams({ step: nextPostTeamStep });
         }
       },
       onError: (err) => setError(err.message || "Failed to update profile."),
@@ -193,7 +204,7 @@ export function OnboardingFlow() {
     trpc.team.create.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries();
-        setStep(nextPostTeamStep);
+        setParams({ step: nextPostTeamStep });
       },
       onError: (err) => setError(err.message || "Failed to create team."),
     }),
@@ -205,7 +216,7 @@ export function OnboardingFlow() {
         queryClient.invalidateQueries({
           queryKey: trpc.team.current.queryKey(),
         });
-        setStep(nextPostTeamStep);
+        setParams({ step: nextPostTeamStep });
       },
       onError: (err) => setError(err.message || "Failed to update team."),
     }),
@@ -215,7 +226,7 @@ export function OnboardingFlow() {
     trpc.billing.selectTrialPlan.mutationOptions({
       onSuccess: (data) => {
         clearTrialPlanCookie();
-        setStep(data.plan === "starter" ? "starter" : "mailbox");
+        setParams({ step: data.plan === "starter" ? "starter" : "mailbox" });
       },
       onError: (err) => setError(err.message || "Failed to set plan."),
     }),
@@ -233,12 +244,12 @@ export function OnboardingFlow() {
   );
 
   useEffect(() => {
-    if (step !== "starter") return;
+    if (resolvedStep !== "starter") return;
     setStarterMailboxAttempted(false);
-  }, [step]);
+  }, [resolvedStep]);
 
   useEffect(() => {
-    if (step !== "starter") return;
+    if (resolvedStep !== "starter") return;
     if (starterMailbox) return;
     if (starterMailboxAttempted) return;
     if (ensureStarterMailboxMutation.isPending) return;
@@ -246,23 +257,23 @@ export function OnboardingFlow() {
     ensureStarterMailboxMutation.mutate();
   }, [
     ensureStarterMailboxMutation,
+    resolvedStep,
     starterMailbox,
     starterMailboxAttempted,
-    step,
   ]);
 
   useEffect(() => {
-    if (step !== "mailbox") return;
+    if (resolvedStep !== "mailbox") return;
     const timer = setTimeout(() => {
       setDebouncedMailbox(mailboxName.trim().toLowerCase());
     }, 300);
     return () => clearTimeout(timer);
-  }, [mailboxName, step]);
+  }, [mailboxName, resolvedStep]);
 
   const createMailboxMutation = useMutation(
     trpc.inbox.mailboxes.create.mutationOptions({
       onSuccess: () => {
-        setStep("invite");
+        setParams({ step: "invite" });
       },
       onError: (err) => setError(err.message || "Failed to create mailbox."),
     }),
@@ -289,11 +300,13 @@ export function OnboardingFlow() {
       name: debouncedMailbox,
     }),
     enabled:
-      step === "mailbox" && debouncedMailbox.length > 0 && isMailboxValid,
+      resolvedStep === "mailbox" &&
+      debouncedMailbox.length > 0 &&
+      isMailboxValid,
   });
 
   const availabilityMessage = useMemo(() => {
-    if (step !== "mailbox" || !isMailboxValid) return null;
+    if (resolvedStep !== "mailbox" || !isMailboxValid) return null;
     if (isChecking) {
       return { tone: "muted", text: "Checking availability..." } as const;
     }
@@ -327,7 +340,7 @@ export function OnboardingFlow() {
       }
     }
     return null;
-  }, [availability, isChecking, isMailboxValid, step]);
+  }, [availability, isChecking, isMailboxValid, resolvedStep]);
 
   const availabilityToneClass =
     availabilityMessage?.tone === "success"
@@ -340,7 +353,7 @@ export function OnboardingFlow() {
     ? `${starterMailbox.name}@${starterMailbox.domain}`
     : null;
 
-  const stepIndex = step ? stepIndexMap[step] : 1;
+  const stepIndex = resolvedStep ? stepIndexMap[resolvedStep] : 1;
 
   const handleProfileContinue = () => {
     if (!fullName.trim()) return;
@@ -357,7 +370,7 @@ export function OnboardingFlow() {
       return;
     }
     if (trimmed === team.name?.trim()) {
-      setStep(nextPostTeamStep);
+      setParams({ step: nextPostTeamStep });
       return;
     }
     updateTeamMutation.mutate({ name: trimmed });
@@ -405,7 +418,7 @@ export function OnboardingFlow() {
     }
   };
 
-  if (!step) {
+  if (!resolvedStep) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-sm text-muted-foreground">
         Loading onboarding...
@@ -432,7 +445,7 @@ export function OnboardingFlow() {
         </div>
 
         <Card>
-          {step === "profile" && (
+          {resolvedStep === "profile" && (
             <>
               <CardHeader>
                 <CardTitle>What is your name?</CardTitle>
@@ -468,7 +481,7 @@ export function OnboardingFlow() {
             </>
           )}
 
-          {step === "team" && (
+          {resolvedStep === "team" && (
             <>
               <CardHeader>
                 <CardTitle>Name your team</CardTitle>
@@ -509,7 +522,7 @@ export function OnboardingFlow() {
             </>
           )}
 
-          {step === "plan" && (
+          {resolvedStep === "plan" && (
             <>
               <CardHeader>
                 <CardTitle>Choose your trial plan</CardTitle>
@@ -519,7 +532,7 @@ export function OnboardingFlow() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {(["starter", "pro"] as const).map((tier) => {
+                  {onboardingPlanOptions.map((tier) => {
                     const planDef = PLAN_CATALOG[tier];
                     const isSelected = selectedPlan === tier;
                     return (
@@ -531,7 +544,7 @@ export function OnboardingFlow() {
                             ? "border-foreground"
                             : "border-border hover:border-foreground/50",
                         )}
-                        onClick={() => setSelectedPlan(tier)}
+                        onClick={() => setParams({ plan: tier })}
                       >
                         <CardHeader className="space-y-1">
                           <CardTitle className="text-base">
@@ -574,7 +587,7 @@ export function OnboardingFlow() {
             </>
           )}
 
-          {step === "starter" && (
+          {resolvedStep === "starter" && (
             <>
               <CardHeader>
                 <CardTitle>Your Starter inbox is ready</CardTitle>
@@ -623,7 +636,7 @@ export function OnboardingFlow() {
               <CardFooter className="justify-end">
                 <Button
                   type="button"
-                  onClick={() => setStep("invite")}
+                  onClick={() => setParams({ step: "invite" })}
                   disabled={
                     !starterMailbox || ensureStarterMailboxMutation.isPending
                   }
@@ -634,7 +647,7 @@ export function OnboardingFlow() {
             </>
           )}
 
-          {step === "mailbox" && (
+          {resolvedStep === "mailbox" && (
             <>
               <CardHeader>
                 <CardTitle>Create your first mailbox</CardTitle>
@@ -684,7 +697,7 @@ export function OnboardingFlow() {
             </>
           )}
 
-          {step === "invite" && (
+          {resolvedStep === "invite" && (
             <>
               <CardHeader>
                 <CardTitle>Invite a teammate</CardTitle>
