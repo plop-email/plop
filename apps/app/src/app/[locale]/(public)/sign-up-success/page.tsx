@@ -6,15 +6,20 @@ export const metadata = {
   title: "Verify your email",
 };
 
-type PageProps = {
-  searchParams?: {
-    email?: string;
-  };
+type SearchParams = {
+  email?: string;
 };
 
-export default function Page({ searchParams }: PageProps) {
+type PageProps = {
+  searchParams?: SearchParams | Promise<SearchParams>;
+};
+
+export default async function Page({ searchParams }: PageProps) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
   const defaultEmail =
-    typeof searchParams?.email === "string" ? searchParams.email : null;
+    typeof resolvedSearchParams?.email === "string"
+      ? resolvedSearchParams.email
+      : null;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
