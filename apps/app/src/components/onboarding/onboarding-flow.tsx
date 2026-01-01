@@ -92,11 +92,29 @@ export function OnboardingFlow() {
     normalizedTeamName.length === 0 ||
     normalizedTeamName.toLowerCase() === "my team";
   const hasCompleted = Boolean(team?.onboardingCompletedAt);
+  const hasAdvancedPastPlan = Boolean(
+    params.step && stepIndexMap[params.step] > stepIndexMap.plan,
+  );
+  const cookiePlan = getTrialPlanCookie();
+  const selectedPlan: TrialPlan =
+    params.plan ??
+    cookiePlan ??
+    (isOnboardingPlan(team?.plan)
+      ? team.plan
+      : DEFAULT_PLAN_TIER === "starter"
+        ? "starter"
+        : "pro");
+  const onboardingPlan: TrialPlan = hasAdvancedPastPlan
+    ? selectedPlan
+    : isOnboardingPlan(team?.plan)
+      ? team.plan
+      : selectedPlan;
   const shouldSelectPlan =
-    !team?.subscriptionStatus || team.subscriptionStatus === "trialing";
+    !hasAdvancedPastPlan &&
+    (!team?.subscriptionStatus || team.subscriptionStatus === "trialing");
   const nextPostTeamStep: OnboardingStep = shouldSelectPlan
     ? "plan"
-    : team?.plan === "starter"
+    : onboardingPlan === "starter"
       ? "starter"
       : "mailbox";
 
@@ -107,17 +125,25 @@ export function OnboardingFlow() {
     if (needsFullName) return "profile";
     if (!team || needsTeamName) return "team";
     if (shouldSelectPlan) return "plan";
-    if (team?.plan === "starter") return "starter";
+    if (onboardingPlan === "starter") return "starter";
     return "mailbox";
-  }, [membership, needsFullName, needsTeamName, shouldSelectPlan, team, user]);
+  }, [
+    membership,
+    needsFullName,
+    needsTeamName,
+    onboardingPlan,
+    shouldSelectPlan,
+    team,
+    user,
+  ]);
 
   const isParamStepAllowed = useMemo(() => {
     if (!params.step || !requiredStep) return false;
     if (stepIndexMap[params.step] > stepIndexMap[requiredStep]) return false;
-    if (params.step === "starter" && team?.plan !== "starter") return false;
-    if (params.step === "mailbox" && team?.plan === "starter") return false;
+    if (params.step === "starter" && onboardingPlan !== "starter") return false;
+    if (params.step === "mailbox" && onboardingPlan === "starter") return false;
     return true;
-  }, [params.step, requiredStep, team?.plan]);
+  }, [onboardingPlan, params.step, requiredStep]);
 
   const resolvedStep = isParamStepAllowed ? params.step : requiredStep;
 
@@ -176,16 +202,6 @@ export function OnboardingFlow() {
     });
   }, [params.plan, setParams, team?.plan]);
 
-  const cookiePlan = getTrialPlanCookie();
-  const selectedPlan: TrialPlan =
-    params.plan ??
-    cookiePlan ??
-    (isOnboardingPlan(team?.plan)
-      ? team.plan
-      : DEFAULT_PLAN_TIER === "starter"
-        ? "starter"
-        : "pro");
-
   const updateUserMutation = useMutation(
     trpc.user.update.mutationOptions({
       onSuccess: () => {
@@ -224,9 +240,15 @@ export function OnboardingFlow() {
 
   const selectTrialPlanMutation = useMutation(
     trpc.billing.selectTrialPlan.mutationOptions({
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         clearTrialPlanCookie();
-        setParams({ step: data.plan === "starter" ? "starter" : "mailbox" });
+        await queryClient.invalidateQueries({
+          queryKey: trpc.team.current.queryKey(),
+        });
+        setParams({
+          step: data.plan === "starter" ? "starter" : "mailbox",
+          plan: data.plan,
+        });
       },
       onError: (err) => setError(err.message || "Failed to set plan."),
     }),
