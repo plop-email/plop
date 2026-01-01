@@ -86,7 +86,15 @@ Deno.serve(async (req) => {
 
   const {
     user,
-    email_data: { token, email_action_type, token_hash, redirect_to, site_url },
+    email_data: {
+      token,
+      token_new,
+      token_hash,
+      token_hash_new,
+      email_action_type,
+      redirect_to,
+      site_url,
+    },
   } = verifiedPayload;
 
   const displayName = user.user_metadata?.full_name || user.email;
