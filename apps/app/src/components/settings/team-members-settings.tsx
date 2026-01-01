@@ -18,22 +18,18 @@ import {
   TableRow,
 } from "@plop/ui/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTRPC } from "@/trpc/client";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useTeamMembership } from "@/hooks/use-team-membership";
 
 export function TeamMembersSettings() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { isOwner } = useTeamMembership();
 
-  const { data: me } = useQuery(trpc.user.me.queryOptions());
+  const { data: me } = useCurrentUser();
   const { data: members } = useQuery(trpc.team.members.queryOptions());
-
-  const currentMembership = useMemo(() => {
-    if (!me || !members) return null;
-    return members.find((member) => member.user.id === me.id) ?? null;
-  }, [me, members]);
-
-  const isOwner = currentMembership?.role === "owner";
 
   const { data: invites } = useQuery({
     ...trpc.team.invites.queryOptions(),

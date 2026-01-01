@@ -1,12 +1,17 @@
 import { useQueryStates } from "nuqs";
-import { createLoader, parseAsArrayOf, parseAsString } from "nuqs/server";
+import {
+  createLoader,
+  parseAsArrayOf,
+  parseAsIsoDate,
+  parseAsString,
+} from "nuqs/server";
 
 export const inboxFilterParamsSchema = {
   q: parseAsString,
   mailbox: parseAsString,
   tags: parseAsArrayOf(parseAsString),
-  start: parseAsString,
-  end: parseAsString,
+  start: parseAsIsoDate,
+  end: parseAsIsoDate,
 };
 
 export function useInboxFilterParams() {

@@ -10,15 +10,16 @@ import {
   CardTitle,
 } from "@plop/ui/card";
 import { Input } from "@plop/ui/input";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTRPC } from "@/trpc/client";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function ProfileSettings() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery(trpc.user.me.queryOptions());
+  const { data: user } = useCurrentUser();
   const [fullName, setFullName] = useState("");
 
   useEffect(() => {

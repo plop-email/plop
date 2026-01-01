@@ -13,11 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@plop/ui/dropdown-menu";
 import { cn } from "@plop/ui/cn";
-import { useQuery } from "@tanstack/react-query";
 import { Check, Laptop, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { useTRPC } from "@/trpc/client";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { UserAvatar } from "./user-avatar";
 
 interface UserMenuProps {
@@ -25,8 +24,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ className }: UserMenuProps) {
-  const trpc = useTRPC();
-  const { data: user } = useQuery(trpc.user.me.queryOptions());
+  const { data: user } = useCurrentUser();
   const { theme, setTheme } = useTheme();
 
   if (!user) {

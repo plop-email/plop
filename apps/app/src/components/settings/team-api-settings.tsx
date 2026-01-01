@@ -37,6 +37,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTRPC } from "@/trpc/client";
+import { useTeamMembership } from "@/hooks/use-team-membership";
 
 const scopeOptions = [
   {
@@ -87,8 +88,8 @@ function formatExpiry(value: Date | string | null | undefined) {
 export function TeamApiSettings() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { isOwner } = useTeamMembership();
 
-  const { data: team } = useQuery(trpc.team.current.queryOptions());
   const { data: mailboxes = [] } = useQuery(
     trpc.inbox.mailboxes.list.queryOptions(),
   );
@@ -129,7 +130,6 @@ export function TeamApiSettings() {
     }),
   );
 
-  const isOwner = team?.role === "owner";
   const selectedScope = scopeOptions.find((option) => option.value === scope);
   const mailboxOptions = useMemo(
     () => mailboxes.map((mailbox) => mailbox.name),

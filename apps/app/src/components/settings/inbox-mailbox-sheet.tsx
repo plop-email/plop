@@ -13,6 +13,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useInboxSettingsParams } from "@/hooks/use-inbox-settings-params";
+import { useTeamMembership } from "@/hooks/use-team-membership";
 import { useTRPC } from "@/trpc/client";
 
 const mailboxPattern = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/i;
@@ -22,8 +23,8 @@ export function InboxMailboxSheet() {
   const queryClient = useQueryClient();
   const { mailboxSheet, mailboxId, setParams } = useInboxSettingsParams();
   const isOpen = mailboxSheet === "create" || mailboxSheet === "edit";
+  const { team, isOwner } = useTeamMembership();
 
-  const { data: team } = useQuery(trpc.team.current.queryOptions());
   const { data: mailboxes = [] } = useQuery({
     ...trpc.inbox.mailboxes.list.queryOptions(),
     enabled: isOpen,
@@ -64,7 +65,6 @@ export function InboxMailboxSheet() {
     }),
   );
 
-  const isOwner = team?.role === "owner";
   const normalizedName = name.trim().toLowerCase();
   const isValidName =
     normalizedName.length > 0 && mailboxPattern.test(normalizedName);

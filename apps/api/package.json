@@ -13,6 +13,7 @@
     "./trpc/routers/_app": "./src/trpc/routers/_app.ts"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.4.1",
     "@hono/trpc-server": "^0.4.1",
     "@hono/zod-openapi": "^1.2.0",
     "@plop/billing": "workspace:*",
@@ -24,6 +25,7 @@
     "@scalar/hono-api-reference": "^0.9.30",
     "@supabase/supabase-js": "^2.89.0",
     "@trpc/server": "^11.8.0",
+    "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.0",
     "hono": "^4.11.1",
     "jose": "^6.1.3",

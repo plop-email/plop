@@ -1,3 +1,4 @@
+import { tz } from "@date-fns/tz";
 import {
   DEFAULT_PLAN_TIER,
   getPlanEntitlements,
@@ -11,6 +12,7 @@ import {
   teams,
 } from "@plop/db/schema";
 import { TRPCError } from "@trpc/server";
+import { endOfDay, startOfDay } from "date-fns";
 import {
   and,
   desc,
@@ -66,20 +68,15 @@ const optionalDomainSchema = z.preprocess(
 );
 
 const rootDomain = env.INBOX_ROOT_DOMAIN.trim().toLowerCase();
-
-const dateFilterSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .optional();
-
+const utc = tz("UTC");
 const messagesListSchema = z
   .object({
     mailboxId: z.string().uuid().optional(),
     limit: z.number().int().min(1).max(200).optional(),
     q: z.string().trim().min(1).max(200).optional(),
     tags: z.array(z.string().trim().min(1).max(64)).max(50).optional(),
-    start: dateFilterSchema,
-    end: dateFilterSchema,
+    start: z.date().optional(),
+    end: z.date().optional(),
   })
   .optional();
 
@@ -638,18 +635,10 @@ export const inboxRouter = createTRPCRouter({
         }
 
         let startDate = input?.start
-          ? new Date(`${input.start}T00:00:00.000Z`)
+          ? startOfDay(input.start, { in: utc })
           : null;
-        let endDate = input?.end
-          ? new Date(`${input.end}T23:59:59.999Z`)
-          : null;
+        let endDate = input?.end ? endOfDay(input.end, { in: utc }) : null;
 
-        if (startDate && Number.isNaN(startDate.getTime())) {
-          startDate = null;
-        }
-        if (endDate && Number.isNaN(endDate.getTime())) {
-          endDate = null;
-        }
         if (startDate && endDate && startDate > endDate) {
           const swapped = startDate;
           startDate = endDate;

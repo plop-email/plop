@@ -3,6 +3,7 @@ import { createTRPCRouter } from "../init";
 import { apiKeysRouter } from "./api-keys";
 import { billingRouter } from "./billing";
 import { inboxRouter } from "./inbox";
+import { metricsRouter } from "./metrics";
 import { teamRouter } from "./team";
 import { userRouter } from "./user";
 
@@ -10,6 +11,7 @@ export const appRouter = createTRPCRouter({
   apiKeys: apiKeysRouter,
   billing: billingRouter,
   inbox: inboxRouter,
+  metrics: metricsRouter,
   user: userRouter,
   team: teamRouter,
 });

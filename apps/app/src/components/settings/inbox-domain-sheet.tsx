@@ -13,6 +13,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useInboxSettingsParams } from "@/hooks/use-inbox-settings-params";
+import { useTeamMembership } from "@/hooks/use-team-membership";
 import { useTRPC } from "@/trpc/client";
 
 const domainPattern = /^[a-z0-9.-]+$/i;
@@ -22,8 +23,8 @@ export function InboxDomainSheet() {
   const queryClient = useQueryClient();
   const { domainSheet, setParams } = useInboxSettingsParams();
   const isOpen = domainSheet === "create" || domainSheet === "edit";
+  const { team, isOwner } = useTeamMembership();
 
-  const { data: team } = useQuery(trpc.team.current.queryOptions());
   const { data: settings } = useQuery({
     ...trpc.inbox.settings.get.queryOptions(),
     enabled: isOpen,
@@ -50,7 +51,6 @@ export function InboxDomainSheet() {
     }),
   );
 
-  const isOwner = team?.role === "owner";
   const plan = team?.plan ?? DEFAULT_PLAN_TIER;
   const entitlements = getPlanEntitlements(plan);
   const canUseCustomDomain = entitlements.customDomains;

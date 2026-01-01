@@ -1,61 +1,37 @@
+import { MetricsDashboard } from "@/components/metrics/metrics-dashboard";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@plop/ui/card";
+import { prefetch, trpc } from "@/trpc/server";
+import type { SearchParams } from "nuqs/server";
+import { loadMetricsFilterParams } from "@/hooks/use-metrics-filter-params";
 
 export const metadata = {
   title: "Metrics",
 };
 
-const stats = [
-  { label: "Total inbound", value: "—" },
-  { label: "Avg response time", value: "—" },
-  { label: "SLA met", value: "—" },
-];
+type Props = {
+  searchParams: Promise<SearchParams>;
+};
 
-export default function Page() {
+export default async function Page(props: Props) {
+  const searchParams = await props.searchParams;
+  const filters = loadMetricsFilterParams(searchParams);
+  const input = {
+    start: filters.start,
+    end: filters.end,
+    mailboxId: filters.mailbox ?? undefined,
+  };
+
+  prefetch(trpc.inbox.mailboxes.list.queryOptions());
+  prefetch(trpc.metrics.overview.queryOptions(input));
+
   return (
     <>
       <PageHeader
         title="Metrics"
-        description="Monitor volume, response times, and SLA health."
+        description="Track inbound volume, tagging coverage, and sender activity."
       />
       <div className="container mx-auto space-y-6 px-4 py-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {stats.map((stat) => (
-            <Card key={stat.label}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">
-                  {stat.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-semibold">{stat.value}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Inbound volume</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex h-48 items-center justify-center border border-dashed text-sm text-muted-foreground">
-                Chart placeholder
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Mailbox breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex h-48 items-center justify-center border border-dashed text-sm text-muted-foreground">
-                Chart placeholder
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <MetricsDashboard />
       </div>
     </>
   );

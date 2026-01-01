@@ -15,8 +15,8 @@ type InboxFilterChipsProps = {
   query: string | null;
   mailboxId: string | null;
   tags: string[] | null;
-  startDate: string | null;
-  endDate: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
   onRemove: (filters: {
     q?: null;
     mailbox?: null;
@@ -25,29 +25,16 @@ type InboxFilterChipsProps = {
     end?: null;
   }) => void;
 };
-const MONTH_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
-function formatDate(value: string) {
-  const parts = value.split("-");
-  if (parts.length !== 3) return value;
-  const [year, month, day] = parts.map((part) => Number.parseInt(part, 10));
-  if (!year || !month || !day) return value;
-  const monthLabel = MONTH_LABELS[month - 1];
-  if (!monthLabel) return value;
-  return `${monthLabel} ${day}, ${year}`;
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+function formatDate(value: Date) {
+  return dateFormatter.format(value);
 }
 
 export function InboxFilterChips({

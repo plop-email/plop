@@ -34,31 +34,23 @@ type InboxFiltersProps = {
   tags: string[];
   mailboxId: string | null;
   selectedTags: string[];
-  startDate: string | null;
-  endDate: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
   query: string;
   hasFilters: boolean;
   onMailboxChange: (value: string | null) => void;
   onTagsChange: (value: string[] | null) => void;
-  onStartDateChange: (value: string | null) => void;
-  onEndDateChange: (value: string | null) => void;
+  onStartDateChange: (value: Date | null) => void;
+  onEndDateChange: (value: Date | null) => void;
   onQueryChange: (value: string) => void;
   onClearFilters: () => void;
 };
 
-const toLocalDateString = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+const toLocalDate = (date: Date) =>
+  new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 
-const parseLocalDate = (value?: string | null) => {
-  if (!value) return undefined;
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return undefined;
-  return parsed;
-};
+const toUtcDate = (date: Date) =>
+  new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 
 const startOfDay = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -104,10 +96,11 @@ export function InboxFilters({
   const mailboxValue = mailboxId ?? "all";
   const tagValues = selectedTags ?? [];
   const selectedRange = useMemo(() => {
-    const from = parseLocalDate(startDate);
-    const to = parseLocalDate(endDate);
-    if (!from && !to) return undefined;
-    return { from, to };
+    if (!startDate && !endDate) return undefined;
+    return {
+      from: startDate ? toLocalDate(startDate) : undefined,
+      to: endDate ? toLocalDate(endDate) : undefined,
+    };
   }, [startDate, endDate]);
 
   const activeCount =
@@ -146,8 +139,8 @@ export function InboxFilters({
       onEndDateChange(null);
       return;
     }
-    onStartDateChange(range.from ? toLocalDateString(range.from) : null);
-    onEndDateChange(range.to ? toLocalDateString(range.to) : null);
+    onStartDateChange(range.from ? toUtcDate(range.from) : null);
+    onEndDateChange(range.to ? toUtcDate(range.to) : null);
   };
 
   const toggleTag = (value: string) => {
