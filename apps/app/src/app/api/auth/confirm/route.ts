@@ -2,6 +2,7 @@ import { createClient } from "@plop/supabase/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
+import { getAuthErrorMessage } from "@/utils/auth-error-messages";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -21,7 +22,9 @@ export async function GET(request: NextRequest) {
     if (!error) {
       redirect(next);
     } else {
-      redirect(`/auth/error?error=${encodeURIComponent(error.message)}`);
+      redirect(
+        `/auth/error?error=${encodeURIComponent(getAuthErrorMessage(error))}`,
+      );
     }
   }
 

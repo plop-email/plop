@@ -12,6 +12,7 @@ import {
   type PreferredAuthMethod,
   setPreferredAuthCookie,
 } from "@/utils/preferred-auth-cookie";
+import { getAuthErrorMessage } from "@/utils/auth-error-messages";
 
 type LoginFormProps = {
   preferredAuthMethod?: PreferredAuthMethod | null;
@@ -36,7 +37,7 @@ export function LoginForm({ preferredAuthMethod }: LoginFormProps) {
     });
 
     if (error) {
-      setError(error.message);
+      setError(getAuthErrorMessage(error));
       setIsLoading(false);
       return;
     }

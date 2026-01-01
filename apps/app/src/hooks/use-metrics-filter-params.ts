@@ -28,7 +28,9 @@ type MetricsFilterDefaults = {
   end: Date;
 };
 
-export function getMetricsFilterDefaults(baseDate = new Date()): MetricsFilterDefaults {
+export function getMetricsFilterDefaults(
+  baseDate = new Date(),
+): MetricsFilterDefaults {
   const todayUtc = startOfUtcDay(baseDate);
   return {
     start: addDaysUtc(todayUtc, -29),

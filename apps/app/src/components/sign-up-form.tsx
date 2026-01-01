@@ -13,6 +13,7 @@ import {
   type PreferredAuthMethod,
   setPreferredAuthCookie,
 } from "@/utils/preferred-auth-cookie";
+import { getAuthErrorMessage } from "@/utils/auth-error-messages";
 import {
   parseTrialPlanCookie,
   setTrialPlanCookie,
@@ -52,13 +53,13 @@ export function SignUpForm({ preferredAuthMethod }: SignUpFormProps) {
     });
 
     if (error) {
-      setError(error.message);
+      setError(getAuthErrorMessage(error));
       setIsLoading(false);
       return;
     }
 
     setPreferredAuthCookie("password");
-    router.push("/sign-up-success");
+    router.push(`/sign-up-success?email=${encodeURIComponent(email)}`);
   };
 
   return (

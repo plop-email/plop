@@ -5,7 +5,9 @@ import { Button } from "@plop/ui/button";
 import { Input } from "@plop/ui/input";
 import { Label } from "@plop/ui/label";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { OtpVerificationForm } from "./OtpVerificationForm";
+import { getAuthErrorMessage } from "@/utils/auth-error-messages";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -13,6 +15,12 @@ export function ForgotPasswordForm() {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
+  const redirectTo = useMemo(() => {
+    if (typeof window === "undefined") {
+      return "/api/auth/confirm?next=/update-password";
+    }
+    return `${window.location.origin}/api/auth/confirm?next=/update-password`;
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,11 +28,11 @@ export function ForgotPasswordForm() {
     setError(null);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/api/auth/confirm?next=/update-password`,
+      redirectTo,
     });
 
     if (error) {
-      setError(error.message);
+      setError(getAuthErrorMessage(error));
       setIsLoading(false);
       return;
     }
@@ -35,13 +43,28 @@ export function ForgotPasswordForm() {
 
   if (success) {
     return (
-      <div className="space-y-4 text-center">
-        <p className="text-sm text-muted-foreground">
-          Check your email for a link to reset your password.
+      <div className="space-y-6">
+        <div className="space-y-2 text-center">
+          <p className="text-sm text-muted-foreground">
+            We sent a reset link and a 6-digit code to your email.
+          </p>
+        </div>
+
+        <OtpVerificationForm
+          defaultEmail={email}
+          verifyType="recovery"
+          onSuccessPath="/update-password"
+          resendKind="recovery"
+          resendRedirectTo={redirectTo}
+          submitLabel="Continue"
+        />
+
+        <p className="text-center text-sm text-muted-foreground">
+          Remember your password?{" "}
+          <Link href="/login" className="text-foreground hover:underline">
+            Sign in
+          </Link>
         </p>
-        <Link href="/login" className="text-sm text-foreground hover:underline">
-          Back to sign in
-        </Link>
       </div>
     );
   }

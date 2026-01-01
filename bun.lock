@@ -22,6 +22,7 @@
         "@hono/zod-openapi": "^1.2.0",
         "@plop/billing": "workspace:*",
         "@plop/db": "workspace:*",
+        "@plop/email": "workspace:*",
         "@plop/kv": "workspace:*",
         "@plop/logger": "workspace:*",
         "@polar-sh/hono": "^0.5.3",

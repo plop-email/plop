@@ -6,6 +6,7 @@ import { Input } from "@plop/ui/input";
 import { Label } from "@plop/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { getAuthErrorMessage } from "@/utils/auth-error-messages";
 
 export function UpdatePasswordForm() {
   const [password, setPassword] = useState("");
@@ -31,7 +32,7 @@ export function UpdatePasswordForm() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(getAuthErrorMessage(error));
       setIsLoading(false);
       return;
     }
