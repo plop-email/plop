@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { useQueryStates } from "nuqs";
+import type { SearchParams } from "nuqs/server";
 import { createLoader, parseAsIsoDate, parseAsString } from "nuqs/server";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -21,30 +23,41 @@ export function parseMetricsDate(value: string) {
   return parseAsIsoDate.parse(value);
 }
 
-const todayUtc = startOfUtcDay(new Date());
-const defaultEnd = todayUtc;
-const defaultStart = addDaysUtc(todayUtc, -29);
-
-export const metricsFilterDefaults = {
-  start: defaultStart,
-  end: defaultEnd,
+type MetricsFilterDefaults = {
+  start: Date;
+  end: Date;
 };
 
-export const metricsFilterParamsSchema = {
-  start: parseAsIsoDate.withDefault(defaultStart),
-  end: parseAsIsoDate.withDefault(defaultEnd),
-  mailbox: parseAsString,
-};
+export function getMetricsFilterDefaults(baseDate = new Date()): MetricsFilterDefaults {
+  const todayUtc = startOfUtcDay(baseDate);
+  return {
+    start: addDaysUtc(todayUtc, -29),
+    end: todayUtc,
+  };
+}
+
+function createMetricsFilterParamsSchema(defaults: MetricsFilterDefaults) {
+  return {
+    start: parseAsIsoDate.withDefault(defaults.start),
+    end: parseAsIsoDate.withDefault(defaults.end),
+    mailbox: parseAsString,
+  };
+}
 
 export function useMetricsFilterParams() {
-  const [filter, setFilter] = useQueryStates(metricsFilterParamsSchema, {
+  const defaults = useMemo(() => getMetricsFilterDefaults(), []);
+  const paramsSchema = useMemo(
+    () => createMetricsFilterParamsSchema(defaults),
+    [defaults],
+  );
+  const [filter, setFilter] = useQueryStates(paramsSchema, {
     clearOnDefault: true,
   });
 
   const hasFilters =
     Boolean(filter.mailbox) ||
-    filter.start.getTime() !== defaultStart.getTime() ||
-    filter.end.getTime() !== defaultEnd.getTime();
+    filter.start.getTime() !== defaults.start.getTime() ||
+    filter.end.getTime() !== defaults.end.getTime();
 
   return {
     filter,
@@ -53,4 +66,7 @@ export function useMetricsFilterParams() {
   };
 }
 
-export const loadMetricsFilterParams = createLoader(metricsFilterParamsSchema);
+export function loadMetricsFilterParams(searchParams: SearchParams) {
+  const defaults = getMetricsFilterDefaults();
+  return createLoader(createMetricsFilterParamsSchema(defaults))(searchParams);
+}
