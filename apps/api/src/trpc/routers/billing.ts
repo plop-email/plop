@@ -123,22 +123,19 @@ export const billingRouter = createTRPCRouter({
       .limit(1);
 
     const usageCount = Number(usageRow?.count ?? 0);
-    let emailsUsed = usageCount;
-    if (usageCount === 0) {
-      const [messagesCountRow] = await ctx.db
-        .select({ count: sql<number>`count(*)` })
-        .from(inboxMessages)
-        .where(
-          and(
-            eq(inboxMessages.teamId, ctx.teamId),
-            gte(inboxMessages.receivedAt, periodStart),
-            lt(inboxMessages.receivedAt, periodEnd),
-          ),
-        )
-        .limit(1);
-      const messageCount = Number(messagesCountRow?.count ?? 0);
-      emailsUsed = Math.max(usageCount, messageCount);
-    }
+    const [messagesCountRow] = await ctx.db
+      .select({ count: sql<number>`count(*)` })
+      .from(inboxMessages)
+      .where(
+        and(
+          eq(inboxMessages.teamId, ctx.teamId),
+          gte(inboxMessages.receivedAt, periodStart),
+          lt(inboxMessages.receivedAt, periodEnd),
+        ),
+      )
+      .limit(1);
+    const messageCount = Number(messagesCountRow?.count ?? 0);
+    const emailsUsed = Math.max(usageCount, messageCount);
 
     return {
       mailboxesUsed: Number(mailboxCountRow?.count ?? 0),
