@@ -141,9 +141,17 @@ function getMessageOrder(sort?: MessagesSort) {
     case "oldest":
       return [asc(inboxMessages.receivedAt), asc(inboxMessages.id)];
     case "sender":
-      return [asc(inboxMessages.fromAddress), desc(inboxMessages.receivedAt)];
+      return [
+        asc(inboxMessages.fromAddress),
+        desc(inboxMessages.receivedAt),
+        desc(inboxMessages.id),
+      ];
     case "subject":
-      return [asc(inboxMessages.subject), desc(inboxMessages.receivedAt)];
+      return [
+        asc(inboxMessages.subject),
+        desc(inboxMessages.receivedAt),
+        desc(inboxMessages.id),
+      ];
     default:
       return [desc(inboxMessages.receivedAt), desc(inboxMessages.id)];
   }
