@@ -15,14 +15,23 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@plop/ui/chart";
-import { Input } from "@plop/ui/input";
+import { Calendar as DateRangeCalendar } from "@plop/ui/calendar";
+import { cn } from "@plop/ui/cn";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@plop/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@plop/ui/dropdown-menu";
+import { Input } from "@plop/ui/input";
 import { Skeleton } from "@plop/ui/skeleton";
 import {
   Table,
@@ -45,11 +54,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useEffect, useMemo } from "react";
+import type { DateRange } from "react-day-picker";
+import { Calendar as CalendarIcon, Filter, Mail, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTRPC } from "@/trpc/client";
 import {
-  formatMetricsDate,
-  parseMetricsDate,
+  getMetricsFilterDefaults,
   useMetricsFilterParams,
 } from "@/hooks/use-metrics-filter-params";
 
@@ -107,13 +117,45 @@ function parseDate(value: string) {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
-function formatShortDate(value: string) {
-  return shortDateFormatter.format(parseDate(value));
+function formatShortDate(value: string | Date) {
+  const date = typeof value === "string" ? parseDate(value) : value;
+  return shortDateFormatter.format(date);
 }
 
-function formatLongDate(value: string) {
-  return longDateFormatter.format(parseDate(value));
+function formatLongDate(value: string | Date) {
+  const date = typeof value === "string" ? parseDate(value) : value;
+  return longDateFormatter.format(date);
 }
+
+const toLocalDate = (date: Date) =>
+  new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+
+const toUtcDate = (date: Date) =>
+  new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+
+const startOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const addDays = (date: Date, amount: number) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+};
+
+const startOfMonth = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), 1);
+
+const endOfMonth = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+const isSameDay = (left?: Date, right?: Date) => {
+  if (!left || !right) return false;
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+};
 
 function buildDailySeries(
   range: MetricsOverview["range"],
@@ -154,8 +196,7 @@ function MetricsFilters({
   end,
   mailboxId,
   mailboxes,
-  onStartChange,
-  onEndChange,
+  onRangeChange,
   onMailboxChange,
   onReset,
   hasFilters,
@@ -164,103 +205,218 @@ function MetricsFilters({
   end: Date;
   mailboxId: string | null;
   mailboxes: Array<{ id: string; name: string; domain?: string | null }>;
-  onStartChange: (value: string | null) => void;
-  onEndChange: (value: string | null) => void;
+  onRangeChange: (range?: DateRange) => void;
   onMailboxChange: (value: string | null) => void;
   onReset: () => void;
   hasFilters: boolean;
 }) {
-  const startValue = formatMetricsDate(start);
-  const endValue = formatMetricsDate(end);
+  const [open, setOpen] = useState(false);
   const mailboxValue = mailboxId ?? "all";
-  const isRangeInvalid = start > end;
+  const defaults = useMemo(() => getMetricsFilterDefaults(), []);
+  const isDefaultRange =
+    start.getTime() === defaults.start.getTime() &&
+    end.getTime() === defaults.end.getTime();
+
+  const presets = useMemo((): { label: string; range: DateRange }[] => {
+    const today = startOfDay(new Date());
+    return [
+      { label: "Today", range: { from: today, to: today } },
+      {
+        label: "Last 7 days",
+        range: { from: addDays(today, -6), to: today },
+      },
+      {
+        label: "Last 30 days",
+        range: { from: addDays(today, -29), to: today },
+      },
+      {
+        label: "This month",
+        range: { from: startOfMonth(today), to: today },
+      },
+      {
+        label: "Last month",
+        range: {
+          from: startOfMonth(addDays(startOfMonth(today), -1)),
+          to: endOfMonth(addDays(startOfMonth(today), -1)),
+        },
+      },
+    ];
+  }, []);
+
+  const selectedRange = useMemo<DateRange>(
+    () => ({
+      from: toLocalDate(start),
+      to: toLocalDate(end),
+    }),
+    [start, end],
+  );
+
+  const activePreset = presets.find(
+    (preset) =>
+      selectedRange.from &&
+      selectedRange.to &&
+      isSameDay(preset.range.from, selectedRange.from) &&
+      isSameDay(preset.range.to, selectedRange.to),
+  );
+
+  const rangeLabel =
+    activePreset?.label ??
+    `${formatShortDate(start)} - ${formatShortDate(end)}`;
+
+  const mailboxLabel = useMemo(() => {
+    if (!mailboxId) return "All mailboxes";
+    const mailbox = mailboxes.find((item) => item.id === mailboxId);
+    if (!mailbox) return "Selected mailbox";
+    return mailbox.domain ? `${mailbox.name}@${mailbox.domain}` : mailbox.name;
+  }, [mailboxId, mailboxes]);
+
+  const summaryLabel = `${rangeLabel} | ${mailboxLabel}`;
+  const activeCount = Number(Boolean(mailboxId)) + (isDefaultRange ? 0 : 1);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Filters</CardTitle>
-        <CardDescription>
-          Refine metrics by date range or mailbox.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_1.2fr_auto]">
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground">Start</span>
-            <Input
-              type="date"
-              value={startValue}
-              max={endValue || undefined}
-              onChange={(event) =>
-                onStartChange(
-                  event.target.value.length > 0 ? event.target.value : null,
-                )
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground">End</span>
-            <Input
-              type="date"
-              value={endValue}
-              min={startValue || undefined}
-              onChange={(event) =>
-                onEndChange(
-                  event.target.value.length > 0 ? event.target.value : null,
-                )
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground">Mailbox</span>
-            <Select
-              value={mailboxValue}
-              onValueChange={(value) =>
-                onMailboxChange(value === "all" ? null : value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All mailboxes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All mailboxes</SelectItem>
-                {mailboxes.length === 0 ? (
-                  <SelectItem value="empty" disabled>
-                    No mailboxes yet
-                  </SelectItem>
-                ) : (
-                  mailboxes.map((mailbox) => {
-                    const address = mailbox.domain
-                      ? `${mailbox.name}@${mailbox.domain}`
-                      : mailbox.name;
-                    return (
-                      <SelectItem key={mailbox.id} value={mailbox.id}>
-                        {address}
-                      </SelectItem>
-                    );
-                  })
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onReset}
-              disabled={!hasFilters}
-            >
-              Reset
-            </Button>
-          </div>
-        </div>
-        {isRangeInvalid ? (
-          <p className="text-xs text-rose-600">
-            Start date must be before the end date.
-          </p>
-        ) : null}
-      </CardContent>
-    </Card>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <div className="relative w-full">
+        <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          readOnly
+          value={summaryLabel}
+          title={summaryLabel}
+          className="cursor-pointer pl-9 pr-10"
+          onClick={() => setOpen(true)}
+          onFocus={() => setOpen(true)}
+        />
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Open filters"
+            className={cn(
+              "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground transition-colors hover:text-foreground",
+              (hasFilters || open) && "text-foreground",
+            )}
+          >
+            <Filter className="h-4 w-4" />
+            {activeCount > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center border bg-background px-1 text-[10px] font-semibold text-foreground">
+                {activeCount}
+              </span>
+            ) : null}
+          </button>
+        </DropdownMenuTrigger>
+      </div>
+
+      <DropdownMenuContent
+        align="end"
+        side="bottom"
+        sideOffset={12}
+        alignOffset={-8}
+        className="w-[350px] max-w-[calc(100vw-2rem)]"
+      >
+        <DropdownMenuGroup>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              <span>Date range</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent className="w-[720px] max-w-[calc(100vw-2rem)] p-0">
+                <div className="flex flex-col md:flex-row">
+                  <div className="w-full border-b p-3 md:w-[220px] md:border-b-0 md:border-r">
+                    <div className="space-y-1">
+                      {presets.map((preset) => {
+                        const isActive = Boolean(
+                          selectedRange.from &&
+                            selectedRange.to &&
+                            isSameDay(preset.range.from, selectedRange.from) &&
+                            isSameDay(preset.range.to, selectedRange.to),
+                        );
+                        return (
+                          <Button
+                            key={preset.label}
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "h-9 w-full justify-start text-xs font-medium",
+                              isActive && "bg-accent text-accent-foreground",
+                            )}
+                            onClick={() => onRangeChange(preset.range)}
+                          >
+                            {preset.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="min-w-0 flex-1 p-3">
+                    <DateRangeCalendar
+                      mode="range"
+                      selected={selectedRange}
+                      onSelect={onRangeChange}
+                      numberOfMonths={2}
+                      defaultMonth={selectedRange.from}
+                      toDate={new Date()}
+                      initialFocus
+                      className="mx-auto"
+                    />
+                  </div>
+                </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2">
+              <Mail className="h-4 w-4" />
+              <span>Mailbox</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent className="max-h-[320px] overflow-y-auto p-0">
+                <DropdownMenuRadioGroup
+                  value={mailboxValue}
+                  onValueChange={(value) =>
+                    onMailboxChange(value === "all" ? null : value)
+                  }
+                >
+                  <DropdownMenuRadioItem value="all">
+                    All mailboxes
+                  </DropdownMenuRadioItem>
+                  {mailboxes.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      No mailboxes yet
+                    </DropdownMenuItem>
+                  ) : (
+                    mailboxes.map((mailbox) => {
+                      const address = mailbox.domain
+                        ? `${mailbox.name}@${mailbox.domain}`
+                        : mailbox.name;
+                      return (
+                        <DropdownMenuRadioItem
+                          key={mailbox.id}
+                          value={mailbox.id}
+                        >
+                          {address}
+                        </DropdownMenuRadioItem>
+                      );
+                    })
+                  )}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          disabled={!hasFilters}
+          className="gap-2"
+          onSelect={onReset}
+        >
+          <X className="h-4 w-4" />
+          Clear filters
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -345,7 +501,7 @@ export function MetricsDashboard() {
       : null;
 
   const rangeLabel = range
-    ? `${formatShortDate(range.start)} – ${formatShortDate(range.end)}`
+    ? `${formatShortDate(range.start)} - ${formatShortDate(range.end)}`
     : "Last 30 days";
 
   useEffect(() => {
@@ -356,38 +512,21 @@ export function MetricsDashboard() {
     }
   }, [mailboxId, mailboxes, setFilter]);
 
-  const handleStartChange = (value: string | null) => {
-    if (!value) {
-      setFilter({ start: null });
+  const handleRangeChange = (range?: DateRange) => {
+    if (!range || (!range.from && !range.to)) {
+      setFilter({ start: null, end: null });
       return;
     }
-    const parsed = parseMetricsDate(value);
-    if (!parsed) {
-      setFilter({ start: null });
-      return;
-    }
-    if (parsed > endDate) {
-      setFilter({ start: parsed, end: parsed });
-      return;
-    }
-    setFilter({ start: parsed });
-  };
 
-  const handleEndChange = (value: string | null) => {
-    if (!value) {
-      setFilter({ end: null });
+    const nextStart = range.from ? toUtcDate(range.from) : startDate;
+    const nextEnd = range.to ? toUtcDate(range.to) : endDate;
+
+    if (nextStart > nextEnd) {
+      setFilter({ start: nextStart, end: nextStart });
       return;
     }
-    const parsed = parseMetricsDate(value);
-    if (!parsed) {
-      setFilter({ end: null });
-      return;
-    }
-    if (parsed < startDate) {
-      setFilter({ start: parsed, end: parsed });
-      return;
-    }
-    setFilter({ end: parsed });
+
+    setFilter({ start: nextStart, end: nextEnd });
   };
 
   const handleReset = () => {
@@ -401,8 +540,7 @@ export function MetricsDashboard() {
         end={endDate}
         mailboxId={mailboxId}
         mailboxes={mailboxes}
-        onStartChange={handleStartChange}
-        onEndChange={handleEndChange}
+        onRangeChange={handleRangeChange}
         onMailboxChange={(value) => setFilter({ mailbox: value })}
         onReset={handleReset}
         hasFilters={hasFilters}

@@ -15,6 +15,7 @@ import { TRPCError } from "@trpc/server";
 import { endOfDay, startOfDay } from "date-fns";
 import {
   and,
+  asc,
   desc,
   eq,
   gte,
@@ -69,16 +70,84 @@ const optionalDomainSchema = z.preprocess(
 
 const rootDomain = env.INBOX_ROOT_DOMAIN.trim().toLowerCase();
 const utc = tz("UTC");
+const messagesSortOptions = ["newest", "oldest", "sender", "subject"] as const;
+type MessagesSort = (typeof messagesSortOptions)[number];
 const messagesListSchema = z
   .object({
     mailboxId: z.string().uuid().optional(),
     limit: z.number().int().min(1).max(200).optional(),
+    offset: z.number().int().min(0).max(100000).optional(),
+    sort: z.enum(messagesSortOptions).optional(),
     q: z.string().trim().min(1).max(200).optional(),
     tags: z.array(z.string().trim().min(1).max(64)).max(50).optional(),
     start: z.date().optional(),
     end: z.date().optional(),
   })
   .optional();
+type MessagesListInput = z.infer<typeof messagesListSchema>;
+
+function buildMessageConditions(teamId: string, input?: MessagesListInput) {
+  const conditions: SQL[] = [eq(inboxMessages.teamId, teamId)];
+
+  if (input?.mailboxId) {
+    conditions.push(eq(inboxMessages.mailboxId, input.mailboxId));
+  }
+
+  const normalizedQuery = input?.q?.trim();
+  if (normalizedQuery) {
+    const pattern = `%${normalizedQuery}%`;
+    const searchCondition = or(
+      ilike(inboxMessages.subject, pattern),
+      ilike(inboxMessages.fromAddress, pattern),
+      ilike(inboxMessages.toAddress, pattern),
+      ilike(inboxMessages.mailboxWithTag, pattern),
+      ilike(inboxMessages.mailbox, pattern),
+      ilike(inboxMessages.tag, pattern),
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
+    }
+  }
+
+  if (input?.tags && input.tags.length > 0) {
+    const uniqueTags = Array.from(new Set(input.tags));
+    const tagsCondition = inArray(inboxMessages.tag, uniqueTags);
+    if (tagsCondition) {
+      conditions.push(tagsCondition);
+    }
+  }
+
+  let startDate = input?.start ? startOfDay(input.start, { in: utc }) : null;
+  let endDate = input?.end ? endOfDay(input.end, { in: utc }) : null;
+
+  if (startDate && endDate && startDate > endDate) {
+    const swapped = startDate;
+    startDate = endDate;
+    endDate = swapped;
+  }
+
+  if (startDate) {
+    conditions.push(gte(inboxMessages.receivedAt, startDate));
+  }
+  if (endDate) {
+    conditions.push(lte(inboxMessages.receivedAt, endDate));
+  }
+
+  return conditions;
+}
+
+function getMessageOrder(sort?: MessagesSort) {
+  switch (sort) {
+    case "oldest":
+      return [asc(inboxMessages.receivedAt), asc(inboxMessages.id)];
+    case "sender":
+      return [asc(inboxMessages.fromAddress), desc(inboxMessages.receivedAt)];
+    case "subject":
+      return [asc(inboxMessages.subject), desc(inboxMessages.receivedAt)];
+    default:
+      return [desc(inboxMessages.receivedAt), desc(inboxMessages.id)];
+  }
+}
 
 async function getTeamPlan(ctx: { db: TRPCContext["db"]; teamId: string }) {
   const [team] = await ctx.db
@@ -604,53 +673,9 @@ export const inboxRouter = createTRPCRouter({
       .input(messagesListSchema)
       .query(async ({ ctx, input }) => {
         const limit = input?.limit ?? 50;
-        const conditions = [eq(inboxMessages.teamId, ctx.teamId)];
-
-        if (input?.mailboxId) {
-          conditions.push(eq(inboxMessages.mailboxId, input.mailboxId));
-        }
-
-        const normalizedQuery = input?.q?.trim();
-        if (normalizedQuery) {
-          const pattern = `%${normalizedQuery}%`;
-          const searchCondition = or(
-            ilike(inboxMessages.subject, pattern),
-            ilike(inboxMessages.fromAddress, pattern),
-            ilike(inboxMessages.toAddress, pattern),
-            ilike(inboxMessages.mailboxWithTag, pattern),
-            ilike(inboxMessages.mailbox, pattern),
-            ilike(inboxMessages.tag, pattern),
-          );
-          if (searchCondition) {
-            conditions.push(searchCondition);
-          }
-        }
-
-        if (input?.tags && input.tags.length > 0) {
-          const uniqueTags = Array.from(new Set(input.tags));
-          const tagsCondition = inArray(inboxMessages.tag, uniqueTags);
-          if (tagsCondition) {
-            conditions.push(tagsCondition);
-          }
-        }
-
-        let startDate = input?.start
-          ? startOfDay(input.start, { in: utc })
-          : null;
-        let endDate = input?.end ? endOfDay(input.end, { in: utc }) : null;
-
-        if (startDate && endDate && startDate > endDate) {
-          const swapped = startDate;
-          startDate = endDate;
-          endDate = swapped;
-        }
-
-        if (startDate) {
-          conditions.push(gte(inboxMessages.receivedAt, startDate));
-        }
-        if (endDate) {
-          conditions.push(lte(inboxMessages.receivedAt, endDate));
-        }
+        const offset = input?.offset ?? 0;
+        const sort = input?.sort ?? "newest";
+        const conditions = buildMessageConditions(ctx.teamId, input);
 
         return ctx.db
           .select({
@@ -666,8 +691,23 @@ export const inboxRouter = createTRPCRouter({
           })
           .from(inboxMessages)
           .where(and(...conditions))
-          .orderBy(desc(inboxMessages.receivedAt))
-          .limit(limit);
+          .orderBy(...getMessageOrder(sort))
+          .limit(limit)
+          .offset(offset);
+      }),
+
+    count: teamProcedure
+      .input(messagesListSchema)
+      .query(async ({ ctx, input }) => {
+        const conditions = buildMessageConditions(ctx.teamId, input);
+
+        const [row] = await ctx.db
+          .select({ count: sql<number>`count(*)` })
+          .from(inboxMessages)
+          .where(and(...conditions))
+          .limit(1);
+
+        return { count: Number(row?.count ?? 0) };
       }),
 
     get: teamProcedure

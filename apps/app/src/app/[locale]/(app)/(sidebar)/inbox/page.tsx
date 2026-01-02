@@ -36,6 +36,15 @@ export default async function Page(props: Props) {
       end,
     }),
   );
+  prefetch(
+    trpc.inbox.messages.count.queryOptions({
+      mailboxId,
+      q: query && query.length > 0 ? query : undefined,
+      tags,
+      start,
+      end,
+    }),
+  );
 
   return (
     <>
