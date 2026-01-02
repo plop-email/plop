@@ -59,6 +59,7 @@ export async function storeInboundEmail(params: {
     raw,
     receivedAt,
   } = params;
+  const fromAddress = resolveFromAddress(message);
   const subject = message.headers.get("subject");
   const status: MessageStatus = "unprocessed";
   const attempts = 0;
@@ -73,7 +74,7 @@ export async function storeInboundEmail(params: {
       mailbox: mailboxLocalPart,
       mailboxWithTag: recipientLocalPart,
       tag: recipientTag ?? "",
-      from: message.from,
+      from: fromAddress,
       to: message.to,
       subject: subject ?? "",
       receivedAt,
@@ -90,7 +91,7 @@ export async function storeInboundEmail(params: {
       mailbox: mailboxLocalPart,
       mailboxWithTag: recipientLocalPart,
       tag: recipientTag,
-      from: message.from,
+      from: fromAddress,
       to: message.to,
       subject,
       receivedAt,
@@ -111,7 +112,7 @@ export async function storeInboundEmail(params: {
       mailbox: mailboxLocalPart,
       mailboxWithTag: recipientLocalPart,
       tag: recipientTag ?? "",
-      from: message.from,
+      from: fromAddress,
       to: message.to,
       subject: subject ?? "",
       receivedAt,
@@ -129,7 +130,7 @@ export async function storeInboundEmail(params: {
     mailbox: mailboxLocalPart,
     mailboxWithTag: recipientLocalPart,
     tag: recipientTag,
-    from: message.from,
+    from: fromAddress,
     to: message.to,
     subject,
     receivedAt,
@@ -344,6 +345,20 @@ function decodeMailboxComponent(component: string): string {
   } catch {
     return component;
   }
+}
+
+function normalizeHeaderValue(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const cleaned = value.replace(/[\r\n]+/g, " ").trim();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function resolveFromAddress(message: ForwardableEmailMessage): string {
+  const headerFrom = normalizeHeaderValue(message.headers.get("from"));
+  if (headerFrom) return headerFrom;
+  const replyTo = normalizeHeaderValue(message.headers.get("reply-to"));
+  if (replyTo) return replyTo;
+  return normalizeHeaderValue(message.from) ?? "";
 }
 
 function safeJsonParse<T>(input: string): T | null {
