@@ -8,12 +8,13 @@ import {
 import { getProductIdForPlan } from "@plop/billing/polar";
 import {
   inboxMailboxes,
+  inboxMessages,
   teamEmailUsage,
   teamInboxSettings,
   teams,
 } from "@plop/db/schema";
 import { TRPCError } from "@trpc/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
 import { polar, polarEnabled } from "../../utils/polar";
@@ -121,10 +122,25 @@ export const billingRouter = createTRPCRouter({
       )
       .limit(1);
 
+    const usageCount = Number(usageRow?.count ?? 0);
+    const [messagesCountRow] = await ctx.db
+      .select({ count: sql<number>`count(*)` })
+      .from(inboxMessages)
+      .where(
+        and(
+          eq(inboxMessages.teamId, ctx.teamId),
+          gte(inboxMessages.receivedAt, periodStart),
+          lt(inboxMessages.receivedAt, periodEnd),
+        ),
+      )
+      .limit(1);
+    const messageCount = Number(messagesCountRow?.count ?? 0);
+    const emailsUsed = Math.max(usageCount, messageCount);
+
     return {
       mailboxesUsed: Number(mailboxCountRow?.count ?? 0),
       mailboxesLimit: entitlements.mailboxes,
-      emailsUsed: usageRow?.count ?? 0,
+      emailsUsed,
       emailsLimit: entitlements.emailsPerMonth,
       periodStart,
       periodEnd,

@@ -196,17 +196,15 @@ async function handleInboxWebhook(payload: z.infer<typeof inboxWebhookSchema>) {
     } satisfies WebhookResult;
   }
 
-  let periodStart: Date | null = null;
+  const usagePeriodStart = getBillingPeriodStart(receivedAt);
   if (typeof entitlements.emailsPerMonth === "number") {
-    periodStart = getBillingPeriodStart(receivedAt);
-
     const [usage] = await db
       .select({ count: teamEmailUsage.count })
       .from(teamEmailUsage)
       .where(
         and(
           eq(teamEmailUsage.teamId, teamId),
-          eq(teamEmailUsage.periodStart, periodStart),
+          eq(teamEmailUsage.periodStart, usagePeriodStart),
         ),
       )
       .limit(1);
@@ -243,8 +241,7 @@ async function handleInboxWebhook(payload: z.infer<typeof inboxWebhookSchema>) {
     .onConflictDoNothing({ target: inboxMessages.externalId })
     .returning({ id: inboxMessages.id });
 
-  if (message && typeof entitlements.emailsPerMonth === "number") {
-    const usagePeriodStart = periodStart ?? getBillingPeriodStart(receivedAt);
+  if (message) {
     await db
       .insert(teamEmailUsage)
       .values({
