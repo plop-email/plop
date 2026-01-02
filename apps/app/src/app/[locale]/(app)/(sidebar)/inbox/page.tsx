@@ -34,6 +34,9 @@ export default async function Page(props: Props) {
       tags,
       start,
       end,
+      sort: "newest",
+      limit: 50,
+      offset: 0,
     }),
   );
   prefetch(
