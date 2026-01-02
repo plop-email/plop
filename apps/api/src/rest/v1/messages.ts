@@ -5,6 +5,7 @@ import {
   getLatestInboxMessage,
   listInboxMessages,
 } from "@plop/db/queries";
+import { getTeamRetentionStart } from "../../utils/retention";
 import type { ApiKeyContext } from "./auth";
 import {
   errorResponseSchema,
@@ -110,6 +111,11 @@ app.openapi(
     );
     const since = parseDate(parsedQuery.since);
     const limit = parsedQuery.limit ?? 50;
+    const retentionStart = await getTeamRetentionStart(db, apiKey.teamId);
+    const effectiveSince =
+      retentionStart && (!since || since < retentionStart)
+        ? retentionStart
+        : since;
 
     const rows = await listInboxMessages(db, {
       teamId: apiKey.teamId,
@@ -122,7 +128,7 @@ app.openapi(
       subject: parsedQuery.subject?.trim() ?? null,
       start,
       end,
-      since,
+      since: effectiveSince,
       limit,
     });
 
@@ -201,6 +207,11 @@ app.openapi(
       parsedQuery.end,
     );
     const since = parseDate(parsedQuery.since);
+    const retentionStart = await getTeamRetentionStart(db, apiKey.teamId);
+    const effectiveSince =
+      retentionStart && (!since || since < retentionStart)
+        ? retentionStart
+        : since;
 
     const message = await getLatestInboxMessage(db, {
       teamId: apiKey.teamId,
@@ -213,7 +224,7 @@ app.openapi(
       subject: parsedQuery.subject?.trim() ?? null,
       start,
       end,
-      since,
+      since: effectiveSince,
     });
 
     if (!message) {
@@ -289,13 +300,14 @@ app.openapi(
       return c.json({ error: "Forbidden" }, 403);
     }
 
+    const retentionStart = await getTeamRetentionStart(db, apiKey.teamId);
     const message = await getInboxMessageById(db, {
       teamId: apiKey.teamId,
       id,
       mailboxName: resolvedMailbox,
     });
 
-    if (!message) {
+    if (!message || (retentionStart && message.receivedAt < retentionStart)) {
       return c.json({ error: "Not found" }, 404);
     }
 

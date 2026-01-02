@@ -15,7 +15,7 @@ export function PricingSection() {
             Pricing that scales with your inboxes.
           </h2>
           <p className="text-[#A3A7AE] text-lg">
-            Start lightweight, then unlock unlimited mailboxes as you grow.
+            Start lightweight, then add mailboxes as you grow.
           </p>
         </div>
 

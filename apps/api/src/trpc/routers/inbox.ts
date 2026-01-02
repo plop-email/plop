@@ -29,6 +29,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
+import { getTeamRetentionStart } from "../../utils/retention";
 import type { TRPCContext } from "../init";
 import { createTRPCRouter, teamProcedure } from "../init";
 
@@ -86,8 +87,16 @@ const messagesListSchema = z
   .optional();
 type MessagesListInput = z.infer<typeof messagesListSchema>;
 
-function buildMessageConditions(teamId: string, input?: MessagesListInput) {
+function buildMessageConditions(
+  teamId: string,
+  input?: MessagesListInput,
+  retentionStart?: Date | null,
+) {
   const conditions: SQL[] = [eq(inboxMessages.teamId, teamId)];
+
+  if (retentionStart) {
+    conditions.push(gte(inboxMessages.receivedAt, retentionStart));
+  }
 
   if (input?.mailboxId) {
     conditions.push(eq(inboxMessages.mailboxId, input.mailboxId));
@@ -229,6 +238,11 @@ export const inboxRouter = createTRPCRouter({
         const conditions: SQL<unknown>[] = [
           eq(inboxMessages.teamId, ctx.teamId),
         ];
+        const retentionStart = await getTeamRetentionStart(ctx.db, ctx.teamId);
+
+        if (retentionStart) {
+          conditions.push(gte(inboxMessages.receivedAt, retentionStart));
+        }
 
         if (input?.mailboxId) {
           conditions.push(eq(inboxMessages.mailboxId, input.mailboxId));
@@ -683,7 +697,12 @@ export const inboxRouter = createTRPCRouter({
         const limit = input?.limit ?? 50;
         const offset = input?.offset ?? 0;
         const sort = input?.sort ?? "newest";
-        const conditions = buildMessageConditions(ctx.teamId, input);
+        const retentionStart = await getTeamRetentionStart(ctx.db, ctx.teamId);
+        const conditions = buildMessageConditions(
+          ctx.teamId,
+          input,
+          retentionStart,
+        );
 
         return ctx.db
           .select({
@@ -707,7 +726,12 @@ export const inboxRouter = createTRPCRouter({
     count: teamProcedure
       .input(messagesListSchema)
       .query(async ({ ctx, input }) => {
-        const conditions = buildMessageConditions(ctx.teamId, input);
+        const retentionStart = await getTeamRetentionStart(ctx.db, ctx.teamId);
+        const conditions = buildMessageConditions(
+          ctx.teamId,
+          input,
+          retentionStart,
+        );
 
         const [row] = await ctx.db
           .select({ count: sql<number>`count(*)` })
@@ -721,6 +745,16 @@ export const inboxRouter = createTRPCRouter({
     get: teamProcedure
       .input(z.object({ id: z.string().uuid() }))
       .query(async ({ ctx, input }) => {
+        const retentionStart = await getTeamRetentionStart(ctx.db, ctx.teamId);
+        const conditions: SQL<unknown>[] = [
+          eq(inboxMessages.id, input.id),
+          eq(inboxMessages.teamId, ctx.teamId),
+        ];
+
+        if (retentionStart) {
+          conditions.push(gte(inboxMessages.receivedAt, retentionStart));
+        }
+
         const [message] = await ctx.db
           .select({
             id: inboxMessages.id,
@@ -739,12 +773,7 @@ export const inboxRouter = createTRPCRouter({
             tenantSubdomain: inboxMessages.tenantSubdomain,
           })
           .from(inboxMessages)
-          .where(
-            and(
-              eq(inboxMessages.id, input.id),
-              eq(inboxMessages.teamId, ctx.teamId),
-            ),
-          )
+          .where(and(...conditions))
           .limit(1);
 
         if (!message) {

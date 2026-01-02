@@ -15,7 +15,7 @@ export default function TermsPage() {
         <div className="legal-content p-8">
           <h1>Terms &amp; Conditions</h1>
           <p className="text-sm text-white/60">
-            Effective Date: December 31, 2025
+            Effective Date: January 2, 2026
           </p>
 
           <h2>1. Introduction</h2>
@@ -58,7 +58,15 @@ export default function TermsPage() {
             content to us.
           </p>
 
-          <h2>6. Fees &amp; Billing</h2>
+          <h2>6. Data Retention</h2>
+          <p>
+            We retain received emails according to your plan. Starter retains
+            messages for 14 days, Pro retains messages for 90 days, and
+            Enterprise retention is defined by agreement. After the retention
+            window, message content is deleted from the Service.
+          </p>
+
+          <h2>7. Fees &amp; Billing</h2>
           <p>
             Some features may require payment. If you purchase a paid plan, you
             agree to the pricing and payment terms presented at checkout. Fees
@@ -66,14 +74,14 @@ export default function TermsPage() {
             writing.
           </p>
 
-          <h2>7. Privacy</h2>
+          <h2>8. Privacy</h2>
           <p>
             Our use of personal data is described in our Privacy Policy. By
             using the Service, you consent to the collection and use of
             information as described there.
           </p>
 
-          <h2>8. Intellectual Property</h2>
+          <h2>9. Intellectual Property</h2>
           <p>
             The Service and related software, branding, and documentation are
             owned by Plop or its licensors. You receive a limited,
@@ -81,7 +89,7 @@ export default function TermsPage() {
             Terms.
           </p>
 
-          <h2>9. Disclaimer of Warranties</h2>
+          <h2>10. Disclaimer of Warranties</h2>
           <p>
             The Service is provided on an "as is" and "as available" basis. We
             disclaim all warranties, express or implied, including implied
@@ -89,7 +97,7 @@ export default function TermsPage() {
             non-infringement.
           </p>
 
-          <h2>10. Limitation of Liability</h2>
+          <h2>11. Limitation of Liability</h2>
           <p>
             To the maximum extent permitted by law, Plop will not be liable for
             indirect, incidental, special, consequential, or punitive damages,
@@ -100,7 +108,7 @@ export default function TermsPage() {
             the claim.
           </p>
 
-          <h2>11. Termination</h2>
+          <h2>12. Termination</h2>
           <p>
             We may suspend or terminate access to the Service at any time for
             violation of these Terms or for security, legal, or operational
@@ -108,7 +116,7 @@ export default function TermsPage() {
             by their nature should survive termination will survive.
           </p>
 
-          <h2>12. Governing Law</h2>
+          <h2>13. Governing Law</h2>
           <p>
             These Terms are governed by the laws of the jurisdiction in which
             Plop is established, without regard to conflict of law principles.
@@ -117,7 +125,7 @@ export default function TermsPage() {
           <div className="mt-8 border-t border-white/12 pt-8">
             <p>
               Questions about these Terms? Contact us at{" "}
-              <a href="mailto:legal@plop.email">legal@plop.email</a>.
+              <a href="mailto:legal@comonad.co.uk">legal@comonad.co.uk</a>.
             </p>
           </div>
         </div>

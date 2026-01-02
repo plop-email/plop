@@ -144,7 +144,7 @@ export default function PrivacyPage() {
             <p>
               If you have questions about this Privacy Policy or want to
               exercise your rights, contact us at{" "}
-              <a href="mailto:privacy@plop.email">privacy@plop.email</a>.
+              <a href="mailto:privacy@comonad.co.uk">privacy@comonad.co.uk</a>.
             </p>
           </div>
         </div>

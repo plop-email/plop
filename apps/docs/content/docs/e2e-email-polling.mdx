@@ -103,3 +103,4 @@ test("login via OTP", async ({ page, request }) => {
 - Prefer `since` to avoid picking up older messages from previous tests.
 - If you control tags, use `support+login@...` and filter by `tag=login`.
 - Mailbox scoped keys must match the mailbox filter (if provided).
+- Messages are retained per plan (Starter: 14 days, Pro: 90 days, Enterprise: custom).
