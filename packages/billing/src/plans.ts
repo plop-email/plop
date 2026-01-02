@@ -6,6 +6,7 @@ export type PlanEntitlements = {
   tags: number | null;
   emailsPerMonth: number | null;
   customDomains: boolean;
+  retentionDays: number | null;
 };
 
 export type PlanPricing = {
@@ -44,35 +45,39 @@ export const PLAN_CATALOG: Record<PlanTier, PlanDefinition> = {
       tags: null,
       emailsPerMonth: 5000,
       customDomains: false,
+      retentionDays: 14,
     },
     highlights: [
       "1 email address",
       "Unlimited tags",
       "5,000 emails / month",
+      "14-day retention",
       "Shared domain",
     ],
   },
   pro: {
     tier: "pro",
     name: "Pro",
-    shortDescription: "Unlimited mailboxes for busy teams.",
+    shortDescription: "10 email addresses for growing teams.",
     longDescription:
-      "Scale inbox coverage across products, environments, and teams with unlimited mailboxes.",
+      "Scale inbox coverage across products, environments, and teams with 10 mailboxes.",
     pricing: {
       monthly: 49,
       yearly: 468,
       currency: "USD",
     },
     entitlements: {
-      mailboxes: null,
+      mailboxes: 10,
       tags: null,
-      emailsPerMonth: null,
+      emailsPerMonth: 60000,
       customDomains: false,
+      retentionDays: 90,
     },
     highlights: [
-      "Unlimited email addresses",
+      "10 email addresses",
       "Unlimited tags",
-      "Unlimited emails",
+      "60,000 emails / month",
+      "90-day retention",
       "Shared domain",
     ],
   },
@@ -93,11 +98,13 @@ export const PLAN_CATALOG: Record<PlanTier, PlanDefinition> = {
       tags: null,
       emailsPerMonth: null,
       customDomains: true,
+      retentionDays: null,
     },
     highlights: [
       "Custom subdomains",
       "Unlimited mailboxes",
       "Priority support",
+      "Custom retention",
       "Coming soon",
     ],
   },

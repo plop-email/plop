@@ -125,7 +125,7 @@ export function TrialLockModal() {
                       </span>
                     </div>
                     <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                      {planDef.highlights.slice(0, 3).map((highlight) => (
+                      {planDef.highlights.slice(0, 4).map((highlight) => (
                         <li key={highlight}>{highlight}</li>
                       ))}
                     </ul>

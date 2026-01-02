@@ -72,7 +72,7 @@ export default function CookiesPage() {
             <h2>Contact Us</h2>
             <p>
               Questions about cookies? Email{" "}
-              <a href="mailto:privacy@plop.email">privacy@plop.email</a>.
+              <a href="mailto:privacy@comonad.co.uk">privacy@comonad.co.uk</a>.
             </p>
           </div>
         </div>

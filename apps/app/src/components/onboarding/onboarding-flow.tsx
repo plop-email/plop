@@ -586,7 +586,7 @@ export function OnboardingFlow() {
                             </span>
                           </div>
                           <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                            {planDef.highlights.slice(0, 3).map((highlight) => (
+                            {planDef.highlights.slice(0, 4).map((highlight) => (
                               <li key={highlight}>{highlight}</li>
                             ))}
                           </ul>
@@ -636,8 +636,8 @@ export function OnboardingFlow() {
                     </span>
                   </p>
                   <p>
-                    Starter includes one mailbox, unlimited tags, and up to
-                    5,000 emails per month.
+                    Starter includes one mailbox, unlimited tags, up to 5,000
+                    emails per month, and 14-day retention.
                   </p>
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
@@ -674,7 +674,7 @@ export function OnboardingFlow() {
               <CardHeader>
                 <CardTitle>Create your first mailbox</CardTitle>
                 <CardDescription>
-                  Pro gives you unlimited mailboxes. Pick a name for this one.
+                  Pro gives you 10 mailboxes. Pick a name for this one.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
