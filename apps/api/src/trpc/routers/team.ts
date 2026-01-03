@@ -215,30 +215,33 @@ export const teamRouter = createTRPCRouter({
         if (!mailboxNamePattern.test(candidate)) continue;
         if (isReservedMailboxName(candidate)) continue;
 
-        const [existing] = await ctx.db
-          .select({ id: inboxMailboxes.id })
-          .from(inboxMailboxes)
-          .where(
-            and(
-              eq(inboxMailboxes.domain, mailboxDomain),
-              eq(inboxMailboxes.name, candidate),
-            ),
-          )
-          .limit(1);
+        try {
+          const [mailbox] = await ctx.db
+            .insert(inboxMailboxes)
+            .values({
+              teamId,
+              domain: mailboxDomain,
+              name: candidate,
+            })
+            .onConflictDoNothing({
+              target: [inboxMailboxes.domain, inboxMailboxes.name],
+            })
+            .returning();
 
-        if (existing) continue;
-
-        const [mailbox] = await ctx.db
-          .insert(inboxMailboxes)
-          .values({
-            teamId,
-            domain: mailboxDomain,
-            name: candidate,
-          })
-          .returning();
-
-        createdMailbox = mailbox;
-        break;
+          if (mailbox) {
+            createdMailbox = mailbox;
+            break;
+          }
+          // Conflict occurred, try next candidate
+        } catch (error) {
+          // Handle any unexpected constraint violations by trying next candidate
+          const isConstraintViolation =
+            error instanceof Error &&
+            "code" in error &&
+            (error as { code?: string }).code === "23505";
+          if (isConstraintViolation) continue;
+          throw error;
+        }
       }
 
       logger.info(
