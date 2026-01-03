@@ -5,15 +5,19 @@ import { Button } from "@plop/ui/button";
 import { Copy, Check, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 const WELCOME_DISMISSED_KEY = "plop_welcome_dismissed";
 
 function useWelcomeDismissed() {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(WELCOME_DISMISSED_KEY) === "true";
-  });
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(WELCOME_DISMISSED_KEY);
+    if (stored === "true") {
+      setDismissed(true);
+    }
+  }, []);
 
   const dismiss = useCallback(() => {
     localStorage.setItem(WELCOME_DISMISSED_KEY, "true");
