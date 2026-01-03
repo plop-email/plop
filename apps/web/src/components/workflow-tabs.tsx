@@ -63,10 +63,10 @@ export function WorkflowTabs() {
       <div className="mx-auto max-w-[1120px] px-6 lg:px-8 py-20 sm:py-24">
         <div className="text-center mb-12">
           <h2 className="font-heading text-3xl lg:text-4xl text-white mb-4">
-            Drop into your test suite.
+            Works with your test framework
           </h2>
           <p className="text-[#A3A7AE] text-lg">
-            Wait for an email, extract fields, assert results.
+            Fetch emails, extract codes, assert content.
           </p>
         </div>
 

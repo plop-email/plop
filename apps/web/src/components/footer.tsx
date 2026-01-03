@@ -123,7 +123,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#A3A7AE]">
-          <p>© 2025 plop.email</p>
+          <p>© {new Date().getFullYear()} plop.email</p>
           <span>Built for teams who rely on email every day.</span>
         </div>
       </div>
