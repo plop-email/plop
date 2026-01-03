@@ -34,7 +34,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
       const invites = await queryClient.fetchQuery(
         trpc.team.invitesByEmail.queryOptions(),
       );
-      redirect(invites?.length ? "/teams" : "/onboarding");
+      redirect(invites?.length ? "/teams" : "/setup");
     }
 
     return (

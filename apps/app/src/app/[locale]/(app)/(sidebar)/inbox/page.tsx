@@ -1,4 +1,5 @@
 import { InboxView } from "@/components/inbox/inbox-view";
+import { WelcomeBanner } from "@/components/inbox/welcome-banner";
 import { PageHeader } from "@/components/layout/page-header";
 import { loadInboxFilterParams } from "@/hooks/use-inbox-filter-params";
 import { prefetch, trpc } from "@/trpc/server";
@@ -56,6 +57,7 @@ export default async function Page(props: Props) {
         description="Review incoming email and route messages to the right mailbox."
       />
       <div className="container mx-auto px-4 py-8">
+        <WelcomeBanner />
         <InboxView />
       </div>
     </>

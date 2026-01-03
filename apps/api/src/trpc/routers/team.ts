@@ -1,4 +1,12 @@
-import { teamInvites, teamMemberships, teams, users } from "@plop/db/schema";
+import { isReservedMailboxName } from "@plop/billing";
+import {
+  inboxMailboxes,
+  teamInboxSettings,
+  teamInvites,
+  teamMemberships,
+  teams,
+  users,
+} from "@plop/db/schema";
 import { logger } from "@plop/logger";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
@@ -6,6 +14,38 @@ import { z } from "zod";
 import { env } from "../../env";
 import { sendTeamInviteEmail } from "../../utils/email";
 import { createTRPCRouter, protectedProcedure, teamProcedure } from "../init";
+
+const rootDomain =
+  env.INBOX_ROOT_DOMAIN?.trim().toLowerCase() ?? "in.plop.email";
+const mailboxNamePattern = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/i;
+
+function normalizeMailboxSeed(value: string) {
+  const normalized = value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^[^a-z0-9]+/g, "")
+    .replace(/[^a-z0-9]+$/g, "");
+
+  if (!normalized) return "inbox";
+
+  const trimmed = normalized.slice(0, 64).replace(/[^a-z0-9]+$/g, "");
+  return trimmed.length > 0 ? trimmed : "inbox";
+}
+
+function buildMailboxCandidates(base: string) {
+  const safeBase = normalizeMailboxSeed(base);
+  const candidates = [safeBase, `${safeBase}-team`, `${safeBase}-inbox`];
+  const randomSuffix = globalThis.crypto?.randomUUID?.().slice(0, 6) ?? "team";
+  candidates.push(`${safeBase}-${randomSuffix}`);
+  return candidates;
+}
+
+function extractTeamNameFromEmail(email: string): string {
+  const domain = email.split("@")[1]?.split(".")[0] ?? "";
+  if (!domain || domain.length < 2) return "My Team";
+  return domain.charAt(0).toUpperCase() + domain.slice(1);
+}
 
 function requireOwner(role: "owner" | "member") {
   if (role !== "owner") {
@@ -103,6 +143,119 @@ export const teamRouter = createTRPCRouter({
       }
 
       return { teamId };
+    }),
+
+  autoSetup: protectedProcedure
+    .input(z.object({ plan: trialPlanSchema.optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const plan = input?.plan ?? "pro";
+      // Check if user already has a team
+      const membershipDb = ctx.db.usePrimaryOnly
+        ? ctx.db.usePrimaryOnly()
+        : ctx.db;
+      const [existingMembership] = await membershipDb
+        .select({ teamId: teamMemberships.teamId })
+        .from(teamMemberships)
+        .where(eq(teamMemberships.userId, ctx.user.id))
+        .limit(1);
+
+      if (existingMembership) {
+        // Already has a team, return it
+        return { teamId: existingMembership.teamId, alreadySetup: true };
+      }
+
+      // Check for pending invites
+      const invitesResult = await ctx.db.execute(
+        sql`select id from public.list_invites_for_current_user() limit 1`,
+      );
+      const rows = normalizeRows<{ id: string }>(invitesResult);
+      if (rows.length > 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "You have pending team invites. Please accept or decline them first.",
+        });
+      }
+
+      // Generate team name from email
+      const email = ctx.user?.email ?? "";
+      const teamName = extractTeamNameFromEmail(email);
+
+      // Create team with selected plan
+      const result = await ctx.db.execute<{ id: string }>(
+        sql`select public.create_team(${teamName}, ${plan}) as id`,
+      );
+
+      const teamId = result[0]?.id;
+      if (!teamId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create team.",
+        });
+      }
+
+      // Mark onboarding as completed immediately
+      await ctx.db
+        .update(teams)
+        .set({ onboardingCompletedAt: new Date() })
+        .where(eq(teams.id, teamId));
+
+      // Auto-create first mailbox
+      const [settings] = await ctx.db
+        .select()
+        .from(teamInboxSettings)
+        .where(eq(teamInboxSettings.teamId, teamId))
+        .limit(1);
+
+      const mailboxDomain = settings?.domain ?? rootDomain;
+      const candidates = buildMailboxCandidates(teamName);
+
+      let createdMailbox = null;
+      for (const candidate of candidates) {
+        if (!mailboxNamePattern.test(candidate)) continue;
+        if (isReservedMailboxName(candidate)) continue;
+
+        try {
+          const [mailbox] = await ctx.db
+            .insert(inboxMailboxes)
+            .values({
+              teamId,
+              domain: mailboxDomain,
+              name: candidate,
+            })
+            .onConflictDoNothing({
+              target: [inboxMailboxes.domain, inboxMailboxes.name],
+            })
+            .returning();
+
+          if (mailbox) {
+            createdMailbox = mailbox;
+            break;
+          }
+          // Conflict occurred, try next candidate
+        } catch (error) {
+          // Handle any unexpected constraint violations by trying next candidate
+          const isConstraintViolation =
+            error instanceof Error &&
+            "code" in error &&
+            (error as { code?: string }).code === "23505";
+          if (isConstraintViolation) continue;
+          throw error;
+        }
+      }
+
+      logger.info(
+        { teamId, teamName, mailbox: createdMailbox?.name },
+        "Auto-setup completed",
+      );
+
+      return {
+        teamId,
+        teamName,
+        mailboxName: createdMailbox?.name ?? null,
+        mailboxDomain,
+        alreadySetup: false,
+      };
     }),
 
   update: teamProcedure
