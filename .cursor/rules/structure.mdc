@@ -17,10 +17,12 @@ This is a **Turborepo monorepo** using **Bun workspaces**.
 ├── apps/
 │   ├── api/   # Bun + Hono + tRPC server
 │   ├── app/   # Product app (Next.js, App Router)
+│   ├── docs/  # Documentation site (Fumadocs)
 │   ├── inbox/ # Cloudflare Email Routing worker
 │   └── web/   # Marketing site (Next.js)
 ├── packages/
 │   ├── analytics/  # OpenPanel client + server helpers
+│   ├── billing/    # Polar.sh billing integration
 │   ├── db/         # Drizzle schema + DB client
 │   ├── email/      # React Email templates
 │   ├── jobs/       # Trigger.dev jobs
@@ -42,6 +44,7 @@ bun install
 bun dev
 bun dev:app
 bun dev:web
+bun dev:docs
 bun dev:api
 bun dev:email
 bun dev:supabase
@@ -62,6 +65,7 @@ bun generate
 
 - App: `http://localhost:3000`
 - Web: `http://localhost:3001`
+- Docs: `http://localhost:3002`
 - API: `http://localhost:3003`
 - Email dev: `http://localhost:3004`
 - Supabase Studio: `http://localhost:54323`

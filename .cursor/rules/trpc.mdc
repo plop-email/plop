@@ -15,6 +15,7 @@ alwaysApply: false
 - Use:
   - `publicProcedure` for unauthenticated routes
   - `protectedProcedure` for routes that require `ctx.user`
+  - `teamProcedure` for routes that require team membership (adds `ctx.teamId` and `ctx.teamRole`)
 - Prefer returning plain JSON-serializable objects (transformer is `superjson`, but keep outputs simple).
 
 ## App (`apps/app`)

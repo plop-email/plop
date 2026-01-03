@@ -24,10 +24,10 @@ alwaysApply: false
 - Prefer importing Supabase helpers from `@plop/supabase/*` instead of re-creating clients ad-hoc in apps.
 - Keep cookie/session logic in the shared middleware helper to avoid auth drift between apps.
 
-## Schema workflow (like shocking-energy)
+## Schema workflow
 
 - **Write schema changes in** `packages/supabase/supabase/schemas/*.sql` (executed in lexicographic order).
-- **Do not** make hand edits directly inside `packages/supabase/supabase/migrations/` unless you’re fixing an already-shipped migration.
+- **Do not** make hand edits directly inside `packages/supabase/supabase/migrations/` unless you're fixing an already-shipped migration.
 - After applying your schema changes locally, generate a migration:
   - `bun run --cwd packages/supabase migration:create -- -f <migration_name>`
 - Commit both:

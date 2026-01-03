@@ -8,8 +8,10 @@ alwaysApply: false
 # Server Actions (next-safe-action)
 
 - Actions are a boundary. Validate inputs with Zod and keep effects explicit.
-- Prefer shared action clients:
-  - `actionClient` / `actionClientWithMeta` / `authActionClient` in `apps/app/src/actions/safe-action.ts`
+- When adding server actions, create shared action clients in `apps/app/src/actions/safe-action.ts`:
+  - `actionClient` for public actions
+  - `actionClientWithMeta` for actions with metadata
+  - `authActionClient` for authenticated actions
 - For authenticated actions:
   - Require a user session (via Supabase) and fail fast.
   - Apply rate limiting consistently (see `@plop/kv/ratelimit`).
