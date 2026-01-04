@@ -60,6 +60,7 @@ export default async function Page() {
         <GoogleSignin
           label="Sign up with Google"
           showLastUsed={preferred === "google"}
+          isSignup
         />
       </div>
     </div>

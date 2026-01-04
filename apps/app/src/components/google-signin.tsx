@@ -10,6 +10,7 @@ type GoogleSigninProps = {
   showLastUsed?: boolean;
   className?: string;
   next?: string;
+  isSignup?: boolean;
 };
 
 export function GoogleSignin({
@@ -17,12 +18,15 @@ export function GoogleSignin({
   showLastUsed = false,
   className,
   next,
+  isSignup = false,
 }: GoogleSigninProps) {
   const supabase = createClient();
 
   const handleSignin = () => {
-    // Clear any stale onboarding state from previous sessions
-    clearOnboardingState();
+    // Only clear onboarding state for new signups, not returning user logins
+    if (isSignup) {
+      clearOnboardingState();
+    }
 
     const redirectTo = new URL("/api/auth/callback", window.location.origin);
     redirectTo.searchParams.set("provider", "google");
