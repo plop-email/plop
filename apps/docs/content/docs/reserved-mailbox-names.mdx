@@ -1,0 +1,528 @@
+---
+title: Reserved Mailbox Names
+description: Comprehensive security protection against phishing, BEC, and impersonation attacks.
+---
+
+Plop reserves **180+ mailbox names** to prevent security threats including phishing, Business Email Compromise (BEC), and brand impersonation.
+
+## Security Model
+
+### Threat Prevention
+
+<Cards>
+<Card title="Business Email Compromise (BEC)" icon="shield-alert">
+Executive titles (CEO, CFO, Director) blocked to prevent social engineering attacks targeting authority figures.
+</Card>
+
+<Card title="Phishing Attacks" icon="fish">
+Government agencies, payment services, and shipping companies protected against common phishing campaigns.
+</Card>
+
+<Card title="Brand Impersonation" icon="badge-check">
+Major tech brands and service providers reserved to prevent spoofing attacks.
+</Card>
+
+<Card title="Social Engineering" icon="users">
+Authority figures and common service accounts blocked to prevent manipulation attacks.
+</Card>
+</Cards>
+
+## Reserved Categories
+
+### RFC 2142 Standard (8 names)
+
+**Internet standard addresses** required by email protocols:
+
+```
+abuse, admin, administrator, hostmaster,
+mailer-daemon, postmaster, root, webmaster
+```
+
+<Callout type="info">
+These addresses are expected by mail servers and should never be used for user mailboxes.
+</Callout>
+
+---
+
+### System & Technical (11 names)
+
+**System operations** and technical infrastructure:
+
+```
+daemon, system, sys, sysadmin, devops, ops,
+noc, it, tech, technical
+```
+
+Prevents confusion with actual system addresses and operational tooling.
+
+---
+
+### Executive & Authority (14 names) 🚨
+
+**Critical for BEC prevention** - blocks common authority impersonation:
+
+```
+ceo, cfo, cto, coo, ciso, president, vp,
+director, manager, executive, leadership,
+board, founder, owner
+```
+
+<Callout type="warning">
+**Business Email Compromise (BEC)** attacks often impersonate executives to authorize fraudulent transactions. Blocking these names is critical for security.
+</Callout>
+
+**Example Attack Prevented:**
+```
+From: ceo@in.plop.email
+Subject: Urgent wire transfer needed
+```
+
+---
+
+### Government/Authority (11 names) 🚨
+
+**Authority impersonation prevention** - blocks government agencies:
+
+```
+irs, fbi, cia, nsa, government, gov,
+federal, state, police, court
+```
+
+**Common Scams Prevented:**
+- IRS tax fraud notifications
+- FBI investigation threats
+- Court summons phishing
+- Government grant scams
+
+---
+
+### Payment Services (8 names) 🚨
+
+**Financial phishing prevention** - protects payment platforms:
+
+```
+paypal, stripe, venmo, cashapp, zelle,
+bank, banking
+```
+
+**Example Attack Prevented:**
+```
+From: paypal@in.plop.email
+Subject: Your account has been suspended
+Link: http://phishing-site.com/paypal-login
+```
+
+---
+
+### Common Service Providers (9 names)
+
+**Brand protection** - major tech companies:
+
+```
+google, gmail, microsoft, outlook, yahoo,
+apple, icloud, amazon, aws
+```
+
+Prevents verification phishing and account recovery scams.
+
+---
+
+### Shipping/Logistics (7 names) 🚨
+
+**Delivery scam prevention** - common phishing targets:
+
+```
+fedex, ups, usps, dhl, shipping,
+delivery, tracking
+```
+
+**Common Scams Prevented:**
+- Package delivery failed notifications
+- Customs fees payment requests
+- Tracking link phishing
+- Address confirmation scams
+
+---
+
+### Social Media (7 names)
+
+**Account verification phishing** prevention:
+
+```
+facebook, twitter, x, instagram,
+linkedin, youtube, tiktok
+```
+
+---
+
+### Service Accounts (13 names)
+
+**Automated sender addresses** with common variations:
+
+```
+no-reply, noreply, no_reply, donotreply,
+do-not-reply, bounce, bounces, notifications,
+notification, alerts, alert, newsletter,
+newsletters, digest
+```
+
+<Callout>
+Multiple variations (hyphens, underscores) ensure comprehensive coverage.
+</Callout>
+
+---
+
+### Customer Service & Support (10 names)
+
+```
+support, help, helpdesk, service, contact,
+info, information, inquiries, inquiry,
+feedback, questions
+```
+
+---
+
+### Sales & Marketing (8 names)
+
+```
+sales, marketing, business, partner, partners,
+affiliate, affiliates, reseller
+```
+
+---
+
+### Financial & Billing (9 names)
+
+```
+billing, finance, accounting, accounts, payment,
+payments, payroll, invoice, invoices
+```
+
+---
+
+### Legal & Compliance (8 names)
+
+```
+legal, compliance, privacy, gdpr, dpo, terms,
+dmca, copyright
+```
+
+---
+
+### Security (8 names)
+
+```
+security, abuse, spam, phishing, fraud,
+cert, csirt
+```
+
+---
+
+### API & Development (10 names)
+
+```
+api, webhook, webhooks, developer, dev,
+staging, test, testing, demo, sandbox
+```
+
+---
+
+### Human Resources (9 names)
+
+```
+hr, humanresources, human-resources, recruiting,
+recruitment, careers, jobs, hiring
+```
+
+---
+
+### Brand Protection - Plop (8 names)
+
+**Internal brand** protection:
+
+```
+plop, team, teams, company, official,
+staff, employee, employees
+```
+
+---
+
+### Common Generic Terms (10 names)
+
+**Prevent confusion** with generic addresses:
+
+```
+all, everyone, nobody, default, example,
+sample, mail, email, inbox, outbox
+```
+
+---
+
+### Temporary & Testing (9 names)
+
+```
+temp, temporary, tmp, trash, junk,
+spam, test, testing, qa
+```
+
+---
+
+### Special Values (6 names)
+
+```
+null, undefined, none, unknown,
+anonymous, guest
+```
+
+---
+
+### News & Updates (6 names)
+
+```
+news, updates, announcements, press,
+media, pr
+```
+
+---
+
+### Operations (9 names)
+
+```
+operations, deployment, deploy, release,
+releases, status, uptime, monitoring, logs
+```
+
+---
+
+### Reserved for Future (5 names)
+
+```
+reserved, future, coming-soon, beta, alpha
+```
+
+## Implementation
+
+### Location
+
+```
+packages/billing/src/plans.ts
+```
+
+### Usage
+
+The `isReservedMailboxName()` function checks all reserved names:
+
+```typescript
+import { isReservedMailboxName } from '@plop/billing'
+
+// Check if a mailbox name is reserved
+if (isReservedMailboxName('ceo')) {
+  throw new Error('Mailbox name is reserved')
+}
+
+// Validation in mailbox creation
+const mailboxNameSchema = z
+  .string()
+  .transform((value) => value.toLowerCase())
+  .refine((value) => !isReservedMailboxName(value), {
+    message: 'Mailbox name is reserved.'
+  })
+```
+
+### Validation Points
+
+Reserved names are checked at:
+
+1. **Mailbox creation** (`inbox.mailboxes.create`)
+2. **Mailbox update** (`inbox.mailboxes.update`)
+3. **Auto-setup flow** (`team.autoSetup`)
+4. **Starter mailbox** (`inbox.mailboxes.ensureStarterMailbox`)
+
+<Callout type="info">
+All checks are **case-insensitive** - "CEO", "ceo", and "Ceo" are all blocked.
+</Callout>
+
+## Adding Reserved Names
+
+To add new reserved names, edit `RESERVED_MAILBOX_NAMES` in `packages/billing/src/plans.ts`:
+
+```typescript
+export const RESERVED_MAILBOX_NAMES = new Set([
+  // ... existing names ...
+
+  // New Category
+  "new-reserved-name",
+  "another-reserved",
+  // ... more names ...
+])
+```
+
+<Steps>
+<Step>
+**Identify the category**
+
+Place new names in the appropriate category (or create a new one).
+</Step>
+
+<Step>
+**Add with comment**
+
+Include category comment explaining the security rationale.
+</Step>
+
+<Step>
+**Consider variations**
+
+Add common variations (hyphens, underscores, plurals).
+</Step>
+
+<Step>
+**Test validation**
+
+Ensure the name is properly blocked in mailbox creation.
+</Step>
+</Steps>
+
+### Recommended Additions
+
+<Callout type="tip">
+**Future considerations** for expanding the reserved list:
+
+- **Cryptocurrency**: coinbase, binance, crypto, bitcoin, ethereum
+- **Healthcare**: doctor, hospital, medical, patient, healthcare
+- **Education**: university, college, student, admissions, registrar
+- **Regional Government**: specific country agencies (hmrc, cra, ato, etc.)
+</Callout>
+
+## Security Best Practices
+
+### Why Reserve Names?
+
+<Tabs items={['Without Protection', 'With Protection']}>
+<Tab value="Without Protection">
+❌ **Vulnerable System:**
+```
+Attacker creates: ceo@in.plop.email
+Sends to employee: "Urgent wire transfer needed"
+Employee trusts @in.plop.email domain
+Result: $50,000 fraudulent transfer
+```
+</Tab>
+
+<Tab value="With Protection">
+✅ **Protected System:**
+```
+Attacker attempts: ceo@in.plop.email
+System blocks: "Mailbox name is reserved"
+Attack prevented at source
+Result: Employee safe, no fraud
+```
+</Tab>
+</Tabs>
+
+### Defense in Depth
+
+Reserved names are **one layer** of security:
+
+1. **Reserved Names** - Prevent malicious mailbox creation
+2. **Email Authentication** - SPF, DKIM, DMARC validation
+3. **User Education** - Training on phishing awareness
+4. **Rate Limiting** - Prevent bulk mailbox creation
+5. **Monitoring** - Detect suspicious patterns
+
+<Callout type="warning">
+Reserved names prevent **internal** impersonation. External attackers can still use fake domains. Always verify sender domains and use email authentication.
+</Callout>
+
+## Real-World Attack Examples
+
+### BEC (Business Email Compromise)
+
+**Attack Vector:**
+```
+From: cfo@in.plop.email (BLOCKED ✅)
+To: accounts@company.com
+Subject: Urgent: Wire Transfer Required
+
+Please transfer $75,000 to this account immediately.
+This is time-sensitive for the acquisition deal.
+
+- CFO
+```
+
+**Prevention:** `cfo` is reserved, attack fails at mailbox creation.
+
+---
+
+### Phishing - Government
+
+**Attack Vector:**
+```
+From: irs@in.plop.email (BLOCKED ✅)
+To: taxpayer@gmail.com
+Subject: Tax Refund Pending
+
+Click here to verify your identity and receive your $2,400 refund.
+```
+
+**Prevention:** `irs` is reserved, prevents government impersonation.
+
+---
+
+### Phishing - Delivery
+
+**Attack Vector:**
+```
+From: fedex@in.plop.email (BLOCKED ✅)
+To: customer@example.com
+Subject: Package Delivery Failed
+
+Your package could not be delivered.
+Click to reschedule and pay $4.95 customs fee.
+```
+
+**Prevention:** `fedex` is reserved, stops delivery scams.
+
+---
+
+### Brand Impersonation
+
+**Attack Vector:**
+```
+From: paypal@in.plop.email (BLOCKED ✅)
+To: user@example.com
+Subject: Account Limited
+
+Your PayPal account has been limited.
+Click to verify your identity.
+```
+
+**Prevention:** `paypal` is reserved, blocks financial phishing.
+
+## Statistics
+
+<Cards>
+<Card title="Total Reserved">
+**180+ names**
+
+Expanded from 26 original names
+</Card>
+
+<Card title="Security Categories">
+**17 categories**
+
+Organized by threat type
+</Card>
+
+<Card title="Threats Blocked">
+**BEC, Phishing, Impersonation**
+
+Multi-layered protection
+</Card>
+</Cards>
+
+## Related Documentation
+
+- [Onboarding & Team/Mailbox Generation](/onboarding-team-mailbox-generation) - Name generation logic
+- [Inbox Domains & Mailboxes](/inbox-domains-mailboxes) - Domain resolution
+- [System Overview](/system-overview) - Architecture overview

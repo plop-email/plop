@@ -72,6 +72,51 @@ const optionalDomainSchema = z.preprocess(
 const rootDomain = env.INBOX_ROOT_DOMAIN.trim().toLowerCase();
 const utc = tz("UTC");
 const messagesSortOptions = ["newest", "oldest", "sender", "subject"] as const;
+
+// Common consumer email domains - team names matching these should use random fallback
+const CONSUMER_EMAIL_DOMAIN_NAMES = new Set([
+  "gmail",
+  "googlemail",
+  "outlook",
+  "hotmail",
+  "live",
+  "msn",
+  "yahoo",
+  "ymail",
+  "icloud",
+  "aol",
+  "protonmail",
+  "proton",
+  "mail",
+  "zoho",
+  "fastmail",
+  "hey",
+  "tutanota",
+  "gmx",
+]);
+
+function isGenericTeamName(name: string): boolean {
+  const normalized = name.toLowerCase().trim();
+  return (
+    !normalized ||
+    normalized === "my team" ||
+    CONSUMER_EMAIL_DOMAIN_NAMES.has(normalized)
+  );
+}
+
+function generateRandomSuffix(length = 4): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const randomValues = new Uint8Array(length);
+  globalThis.crypto.getRandomValues(randomValues);
+  for (let i = 0; i < length; i++) {
+    const idx = randomValues[i];
+    if (idx !== undefined) {
+      result += chars[idx % chars.length];
+    }
+  }
+  return result;
+}
 type MessagesSort = (typeof messagesSortOptions)[number];
 const messagesListSchema = z
   .object({
@@ -222,10 +267,22 @@ function normalizeMailboxSeed(value: string) {
   return trimmed.length > 0 ? trimmed : "inbox";
 }
 
-function buildMailboxCandidates(base: string) {
+function buildMailboxCandidates(base: string, forceRandom = false) {
   const safeBase = normalizeMailboxSeed(base);
+  const randomSuffix = generateRandomSuffix(4);
+
+  // If the base is generic (like "gmail", "my team", etc.), always use random suffix
+  if (forceRandom || isGenericTeamName(base)) {
+    // For generic names, use "inbox-{random}" pattern for cleaner addresses
+    return [
+      `inbox-${randomSuffix}`,
+      `${safeBase}-${randomSuffix}`,
+      `mail-${randomSuffix}`,
+      `test-${randomSuffix}`,
+    ];
+  }
+
   const candidates = [safeBase, `${safeBase}-team`, `${safeBase}-inbox`];
-  const randomSuffix = globalThis.crypto?.randomUUID?.().slice(0, 6) ?? "team";
   candidates.push(`${safeBase}-${randomSuffix}`);
   return candidates;
 }

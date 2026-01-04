@@ -19,6 +19,59 @@ const rootDomain =
   env.INBOX_ROOT_DOMAIN?.trim().toLowerCase() ?? "in.plop.email";
 const mailboxNamePattern = /^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/i;
 
+// Common consumer email domains where the domain name shouldn't be used as mailbox seed
+const CONSUMER_EMAIL_DOMAINS = new Set([
+  // Google
+  "gmail.com",
+  "googlemail.com",
+  // Microsoft
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "msn.com",
+  // Yahoo
+  "yahoo.com",
+  "ymail.com",
+  "yahoo.co.uk",
+  "yahoo.ca",
+  "yahoo.com.au",
+  // Apple
+  "icloud.com",
+  "me.com",
+  "mac.com",
+  // Others
+  "aol.com",
+  "protonmail.com",
+  "proton.me",
+  "mail.com",
+  "zoho.com",
+  "fastmail.com",
+  "hey.com",
+  "pm.me",
+  "tutanota.com",
+  "gmx.com",
+  "gmx.net",
+]);
+
+function isConsumerEmailDomain(domain: string): boolean {
+  const normalized = domain.toLowerCase().trim();
+  return CONSUMER_EMAIL_DOMAINS.has(normalized);
+}
+
+function generateRandomSuffix(length = 4): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const randomValues = new Uint8Array(length);
+  globalThis.crypto.getRandomValues(randomValues);
+  for (let i = 0; i < length; i++) {
+    const idx = randomValues[i];
+    if (idx !== undefined) {
+      result += chars[idx % chars.length];
+    }
+  }
+  return result;
+}
+
 function normalizeMailboxSeed(value: string) {
   const normalized = value
     .toLowerCase()
@@ -35,16 +88,102 @@ function normalizeMailboxSeed(value: string) {
 
 function buildMailboxCandidates(base: string) {
   const safeBase = normalizeMailboxSeed(base);
+  const randomSuffix = generateRandomSuffix(4);
   const candidates = [safeBase, `${safeBase}-team`, `${safeBase}-inbox`];
-  const randomSuffix = globalThis.crypto?.randomUUID?.().slice(0, 6) ?? "team";
   candidates.push(`${safeBase}-${randomSuffix}`);
   return candidates;
 }
 
-function extractTeamNameFromEmail(email: string): string {
-  const domain = email.split("@")[1]?.split(".")[0] ?? "";
-  if (!domain || domain.length < 2) return "My Team";
-  return domain.charAt(0).toUpperCase() + domain.slice(1);
+/**
+ * Extracts the first name from a full name string.
+ */
+function getFirstName(fullName: string): string | null {
+  const trimmed = fullName.trim();
+  if (!trimmed) return null;
+  const firstName = trimmed.split(/\s+/)[0];
+  return firstName && firstName.length >= 2 ? firstName : null;
+}
+
+/**
+ * Tries to extract a human-readable name from an email username.
+ * Returns null if the username doesn't look like a name.
+ */
+function extractNameFromUsername(username: string): string | null {
+  // Remove common numeric suffixes and clean up
+  const cleaned = username.replace(/\d+$/, "").toLowerCase();
+  if (!cleaned || cleaned.length < 2) return null;
+
+  // Check if it looks like a name pattern (letters with optional separators)
+  // e.g., "john.doe", "john_doe", "johndoe", "john-doe"
+  if (!/^[a-z]+([._-][a-z]+)?$/i.test(cleaned)) return null;
+
+  // Split by common separators and capitalize
+  const parts = cleaned.split(/[._-]/);
+  if (parts.some((p) => p.length < 2)) return null;
+
+  // Return the first part (first name) capitalized
+  const firstName = parts[0];
+  if (!firstName) return null;
+  return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+}
+
+function extractTeamNameFromEmail(
+  email: string,
+  fullName?: string | null,
+): string {
+  // Priority 1: Use the user's actual full name if available
+  const firstName = fullName ? getFirstName(fullName) : null;
+  if (firstName) {
+    return `${firstName}'s Team`;
+  }
+
+  const [username, fullDomain] = email.toLowerCase().split("@");
+  const domainPrefix = fullDomain?.split(".")[0] ?? "";
+
+  // Priority 2: For business emails, use the domain name
+  if (
+    domainPrefix &&
+    domainPrefix.length >= 2 &&
+    !isConsumerEmailDomain(fullDomain ?? "")
+  ) {
+    return domainPrefix.charAt(0).toUpperCase() + domainPrefix.slice(1);
+  }
+
+  // Priority 3: For consumer emails, try to extract name from username
+  const nameFromUsername = extractNameFromUsername(username ?? "");
+  if (nameFromUsername) {
+    return `${nameFromUsername}'s Team`;
+  }
+
+  // Fallback: generic team name
+  return "My Team";
+}
+
+/**
+ * Extracts a suitable mailbox seed from a user's email address.
+ * - For consumer emails (gmail, yahoo, etc.): uses username + random suffix
+ * - For business emails: uses the domain prefix
+ */
+function extractMailboxSeedFromEmail(email: string): string {
+  const [username, fullDomain] = email.toLowerCase().split("@");
+  const domainPrefix = fullDomain?.split(".")[0] ?? "";
+
+  // For consumer email providers, use username + random suffix for uniqueness
+  if (isConsumerEmailDomain(fullDomain ?? "")) {
+    const normalizedUsername = normalizeMailboxSeed(username ?? "inbox");
+    const suffix = generateRandomSuffix(4);
+    return `${normalizedUsername}-${suffix}`;
+  }
+
+  // For business domains, use the domain prefix
+  if (domainPrefix && domainPrefix.length >= 2) {
+    return domainPrefix;
+  }
+
+  // Fallback: use username with random suffix
+  const normalizedUsername = normalizeMailboxSeed(username ?? "inbox");
+  const suffix = generateRandomSuffix(4);
+  return `${normalizedUsername}-${suffix}`;
 }
 
 function requireOwner(role: "owner" | "member") {
@@ -177,9 +316,10 @@ export const teamRouter = createTRPCRouter({
         });
       }
 
-      // Generate team name from email
+      // Generate team name from user data
       const email = ctx.user?.email ?? "";
-      const teamName = extractTeamNameFromEmail(email);
+      const fullName = ctx.session?.user?.full_name;
+      const teamName = extractTeamNameFromEmail(email, fullName);
 
       // Create team with selected plan
       const result = await ctx.db.execute<{ id: string }>(
@@ -208,7 +348,11 @@ export const teamRouter = createTRPCRouter({
         .limit(1);
 
       const mailboxDomain = settings?.domain ?? rootDomain;
-      const candidates = buildMailboxCandidates(teamName);
+      // Use email-based mailbox seed for smarter naming
+      // - Consumer emails (gmail, etc.): uses username + random suffix (e.g., john-x7k2)
+      // - Business emails: uses domain prefix (e.g., acme)
+      const mailboxSeed = extractMailboxSeedFromEmail(email);
+      const candidates = buildMailboxCandidates(mailboxSeed);
 
       let createdMailbox = null;
       for (const candidate of candidates) {

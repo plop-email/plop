@@ -110,33 +110,259 @@ export const PLAN_CATALOG: Record<PlanTier, PlanDefinition> = {
   },
 };
 
+/**
+ * Comprehensive list of reserved mailbox names to prevent:
+ * - System/technical address conflicts (RFC 2142)
+ * - Phishing and social engineering attacks
+ * - Brand impersonation
+ * - Service account conflicts
+ */
 export const RESERVED_MAILBOX_NAMES = new Set([
+  // RFC 2142 Standard Email Addresses
+  "abuse",
   "admin",
   "administrator",
-  "abuse",
-  "alerts",
-  "api",
-  "billing",
-  "compliance",
-  "contact",
-  "devops",
-  "help",
-  "info",
-  "legal",
+  "hostmaster",
   "mailer-daemon",
+  "postmaster",
+  "root",
+  "webmaster",
+
+  // System & Technical
+  "daemon",
+  "system",
+  "sys",
+  "sysadmin",
+  "devops",
+  "ops",
+  "noc",
+  "it",
+  "tech",
+  "technical",
+
+  // Common Service Accounts
   "no-reply",
   "noreply",
-  "ops",
-  "postmaster",
-  "privacy",
-  "root",
-  "sales",
-  "security",
+  "no_reply",
+  "donotreply",
+  "do-not-reply",
+  "bounce",
+  "bounces",
+  "notifications",
+  "notification",
+  "alerts",
+  "alert",
+  "newsletter",
+  "newsletters",
+  "digest",
+
+  // Customer Service & Support
   "support",
-  "system",
-  "team",
+  "help",
+  "helpdesk",
+  "service",
+  "contact",
+  "info",
+  "information",
+  "inquiries",
+  "inquiry",
+  "feedback",
+  "questions",
+
+  // Sales & Marketing
+  "sales",
+  "marketing",
+  "business",
+  "partner",
+  "partners",
+  "affiliate",
+  "affiliates",
+  "reseller",
+
+  // Financial & Billing
+  "billing",
+  "finance",
+  "accounting",
+  "accounts",
+  "payment",
+  "payments",
+  "payroll",
+  "invoice",
+  "invoices",
+
+  // Legal & Compliance
+  "legal",
+  "compliance",
+  "privacy",
+  "gdpr",
+  "dpo",
   "terms",
-  "webmaster",
+  "dmca",
+  "copyright",
+
+  // Security
+  "security",
+  "abuse",
+  "spam",
+  "phishing",
+  "fraud",
+  "cert",
+  "csirt",
+
+  // API & Development
+  "api",
+  "webhook",
+  "webhooks",
+  "developer",
+  "dev",
+  "staging",
+  "test",
+  "testing",
+  "demo",
+  "sandbox",
+
+  // Executive & Authority (Social Engineering Prevention)
+  "ceo",
+  "cfo",
+  "cto",
+  "coo",
+  "ciso",
+  "president",
+  "vp",
+  "director",
+  "manager",
+  "executive",
+  "leadership",
+  "board",
+  "founder",
+  "owner",
+
+  // Human Resources
+  "hr",
+  "humanresources",
+  "human-resources",
+  "recruiting",
+  "recruitment",
+  "careers",
+  "jobs",
+  "hiring",
+
+  // Brand Protection (Plop-specific)
+  "plop",
+  "team",
+  "teams",
+  "company",
+  "official",
+  "staff",
+  "employee",
+  "employees",
+
+  // Common Generic Terms (Prevent Confusion)
+  "all",
+  "everyone",
+  "nobody",
+  "default",
+  "example",
+  "sample",
+  "mail",
+  "email",
+  "inbox",
+  "outbox",
+
+  // Temporary & Testing
+  "temp",
+  "temporary",
+  "tmp",
+  "trash",
+  "junk",
+  "spam",
+  "test",
+  "testing",
+  "qa",
+
+  // Special Values
+  "null",
+  "undefined",
+  "none",
+  "unknown",
+  "anonymous",
+  "guest",
+
+  // News & Updates
+  "news",
+  "updates",
+  "announcements",
+  "press",
+  "media",
+  "pr",
+
+  // Operations
+  "operations",
+  "deployment",
+  "deploy",
+  "release",
+  "releases",
+  "status",
+  "uptime",
+  "monitoring",
+  "logs",
+
+  // Common Service Providers (Brand Protection)
+  "google",
+  "gmail",
+  "microsoft",
+  "outlook",
+  "yahoo",
+  "apple",
+  "icloud",
+  "amazon",
+  "aws",
+
+  // Government/Authority Impersonation Prevention
+  "irs",
+  "fbi",
+  "cia",
+  "nsa",
+  "government",
+  "gov",
+  "federal",
+  "state",
+  "police",
+  "court",
+
+  // Payment Services (Phishing Prevention)
+  "paypal",
+  "stripe",
+  "venmo",
+  "cashapp",
+  "zelle",
+  "bank",
+  "banking",
+
+  // Social Media (Brand Protection)
+  "facebook",
+  "twitter",
+  "x",
+  "instagram",
+  "linkedin",
+  "youtube",
+  "tiktok",
+
+  // Shipping/Logistics (Phishing Prevention)
+  "fedex",
+  "ups",
+  "usps",
+  "dhl",
+  "shipping",
+  "delivery",
+  "tracking",
+
+  // Reserved for Future Use
+  "reserved",
+  "future",
+  "coming-soon",
+  "beta",
+  "alpha",
 ]);
 
 export function getPlanDefinition(plan: PlanTier) {

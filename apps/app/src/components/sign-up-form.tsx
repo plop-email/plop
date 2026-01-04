@@ -18,6 +18,7 @@ import {
   parseTrialPlanCookie,
   setTrialPlanCookie,
 } from "@/utils/trial-plan-cookie";
+import { clearOnboardingState } from "@/utils/onboarding-storage";
 
 type SignUpFormProps = {
   preferredAuthMethod?: PreferredAuthMethod | null;
@@ -58,6 +59,8 @@ export function SignUpForm({ preferredAuthMethod }: SignUpFormProps) {
       return;
     }
 
+    // Clear any stale onboarding state from previous sessions
+    clearOnboardingState();
     setPreferredAuthCookie("password");
     router.push(`/sign-up-success?email=${encodeURIComponent(email)}`);
   };

@@ -3,6 +3,7 @@
 import { createClient } from "@plop/supabase/client";
 import { Button } from "@plop/ui/button";
 import { cn } from "@plop/ui/cn";
+import { clearOnboardingState } from "@/utils/onboarding-storage";
 
 type GoogleSigninProps = {
   label?: string;
@@ -20,6 +21,9 @@ export function GoogleSignin({
   const supabase = createClient();
 
   const handleSignin = () => {
+    // Clear any stale onboarding state from previous sessions
+    clearOnboardingState();
+
     const redirectTo = new URL("/api/auth/callback", window.location.origin);
     redirectTo.searchParams.set("provider", "google");
     if (next) {

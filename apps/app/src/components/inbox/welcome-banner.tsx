@@ -2,12 +2,12 @@
 
 import { Card, CardContent } from "@plop/ui/card";
 import { Button } from "@plop/ui/button";
-import { Copy, Check, X } from "lucide-react";
+import { Copy, Check, X, Key } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { useState, useCallback, useEffect } from "react";
-
-const WELCOME_DISMISSED_KEY = "plop_welcome_dismissed";
+import { WELCOME_DISMISSED_KEY } from "@/utils/onboarding-storage";
+import Link from "next/link";
 
 function useWelcomeDismissed() {
   const [dismissed, setDismissed] = useState(false);
@@ -68,6 +68,13 @@ export function WelcomeBanner() {
               </code>
               )
             </p>
+            <Link
+              href="/settings/team/api-keys"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <Key className="h-3 w-3" />
+              Get your API key
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <Button
