@@ -3,12 +3,14 @@
 import { createClient } from "@plop/supabase/client";
 import { Button } from "@plop/ui/button";
 import { cn } from "@plop/ui/cn";
+import { clearOnboardingState } from "@/utils/onboarding-storage";
 
 type GoogleSigninProps = {
   label?: string;
   showLastUsed?: boolean;
   className?: string;
   next?: string;
+  isSignup?: boolean;
 };
 
 export function GoogleSignin({
@@ -16,10 +18,16 @@ export function GoogleSignin({
   showLastUsed = false,
   className,
   next,
+  isSignup = false,
 }: GoogleSigninProps) {
   const supabase = createClient();
 
   const handleSignin = () => {
+    // Only clear onboarding state for new signups, not returning user logins
+    if (isSignup) {
+      clearOnboardingState();
+    }
+
     const redirectTo = new URL("/api/auth/callback", window.location.origin);
     redirectTo.searchParams.set("provider", "google");
     if (next) {

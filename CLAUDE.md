@@ -93,3 +93,61 @@ bun run test             # Run tests (e.g., apps/inbox uses Bun test)
 - Input validation with Zod at boundaries (tRPC procedures, server actions, env)
 - Structured logging via `@plop/logger` (objects, not string concatenation)
 - Use `"server-only"` import in server-only modules
+
+## Email & Team Generation
+
+**Smart Mailbox Naming** (`apps/api/src/trpc/routers/team.ts`, `inbox.ts`)
+- Detects consumer email providers (Gmail, Yahoo, Outlook, etc.)
+- Consumer emails: username + 4-char random suffix (e.g., `john-x7k2@in.plop.email`)
+- Business emails: domain prefix (e.g., `acme@in.plop.email`)
+- Uses cryptographically secure random generation via `crypto.getRandomValues()`
+
+**Team Name Personalization**
+Priority-based extraction:
+1. User's full name from session → "John's Team"
+2. Business domain → "Acme"
+3. Name-like username → "John's Team"
+4. Fallback → "My Team"
+
+**Helper Functions**
+- `isConsumerEmailDomain(domain)` - Detects 24+ consumer email providers
+- `extractMailboxSeedFromEmail(email)` - Context-aware mailbox generation
+- `extractTeamNameFromEmail(email, fullName?)` - Personalized team naming
+- `generateRandomSuffix(length)` - Secure random string generation
+
+## Onboarding State Management
+
+**Location**: `apps/app/src/utils/onboarding-storage.ts`
+
+**Pattern**: Clear localStorage on new signups to ensure fresh onboarding
+- Export constants for storage keys (`WELCOME_DISMISSED_KEY`)
+- Centralized cleanup function (`clearOnboardingState()`)
+- Call cleanup in both password and OAuth signup flows
+
+**Usage**:
+```typescript
+import { clearOnboardingState } from '@/utils/onboarding-storage';
+
+// In signup handlers
+clearOnboardingState(); // Clears plop_welcome_dismissed
+```
+
+## Reserved Mailbox Names
+
+**Location**: `packages/billing/src/plans.ts`
+
+**Comprehensive Protection** (180+ names across categories):
+- RFC 2142 standard addresses (admin, abuse, postmaster)
+- Executive/authority (ceo, cfo, director) - BEC prevention
+- Government (irs, fbi, police) - authority impersonation prevention
+- Payment services (paypal, stripe) - financial phishing prevention
+- Tech brands (google, microsoft) - brand impersonation prevention
+- Shipping (fedex, ups) - delivery scam prevention
+
+**Adding Reserved Names**: Edit `RESERVED_MAILBOX_NAMES` set with appropriate category comment
+
+**Security Model**:
+- Prevents Business Email Compromise (BEC)
+- Mitigates phishing attacks
+- Protects against social engineering
+- Blocks brand impersonation
