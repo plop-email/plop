@@ -3,6 +3,7 @@ import { Hero } from "@/components/hero";
 import { HowItWorks } from "@/components/how-it-works";
 import { FeatureGrid } from "@/components/feature-grid";
 import { WorkflowTabs } from "@/components/workflow-tabs";
+import { OpenSource } from "@/components/open-source";
 import { PricingSection } from "@/components/pricing-section";
 import { Footer } from "@/components/footer";
 
@@ -14,6 +15,7 @@ export default function Page() {
       <HowItWorks />
       <FeatureGrid />
       <WorkflowTabs />
+      <OpenSource />
       <PricingSection />
       <Footer />
     </main>

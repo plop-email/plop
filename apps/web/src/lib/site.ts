@@ -6,6 +6,7 @@ export const siteConfig = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://plop.email",
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://app.plop.email",
   docsUrl: "https://docs.plop.email",
+  githubUrl: "https://github.com/plop-email/plop",
   calLink: process.env.NEXT_PUBLIC_CAL_LINK ?? "",
   locale: "en_GB",
   author: "Alex Vakhitov",

@@ -265,7 +265,7 @@ This is a **Turborepo monorepo** with Bun workspaces.
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/plop.git
+git clone https://github.com/plop-email/plop.git
 cd plop
 
 # Install dependencies
