@@ -5,6 +5,30 @@ description: What the apps and packages do, and how the main workflows connect.
 
 This monorepo ships a product app, public marketing site, API, and an inbox worker. The key workflows are split across these surfaces, with shared code in `packages/*`.
 
+```mermaid
+flowchart TB
+    subgraph Apps
+        APP[apps/app<br/>Product UI]
+        API[apps/api<br/>Hono + tRPC]
+        INBOX[apps/inbox<br/>CF Worker]
+        WEB[apps/web<br/>Marketing]
+    end
+
+    subgraph Packages
+        DB[packages/db<br/>Drizzle]
+        SUPA[packages/supabase<br/>Auth]
+        UI[packages/ui<br/>Components]
+        KV[packages/kv<br/>Rate Limit]
+    end
+
+    INBOX -->|webhook| API
+    APP -->|tRPC| API
+    API --> DB
+    API --> SUPA
+    APP --> UI
+    WEB --> UI
+```
+
 ## Apps at a glance
 
 - `apps/app` — product UI (Next.js). Primary interface for teams and inbox settings.

@@ -13,16 +13,36 @@ This system supports both a shared root domain and per‑team custom domains.
 
 ## Mailbox resolution rules
 
+```mermaid
+flowchart TD
+    A[Inbound Email] --> B{Custom domain<br/>configured?}
+    B -->|Yes| C[Resolve team by<br/>teamInboxSettings.domain]
+    C --> D{Mailbox exists?}
+    D -->|Yes| E[Store message]
+    D -->|No| F[Create mailbox<br/>for team]
+    F --> E
+
+    B -->|No| G{Domain = root<br/>domain?}
+    G -->|Yes| H[Lookup mailbox by<br/>domain + name]
+    H --> I{Found?}
+    I -->|Yes| E
+    I -->|No| J[404 Not Found]
+
+    G -->|No| K{teamInboxSettings<br/>match?}
+    K -->|Yes| C
+    K -->|No| J
+```
+
 1. **Custom domain configured**
    - `apps/api` resolves the team by `teamInboxSettings.domain = <domain>`.
-   - If a mailbox doesn’t exist for the team, it is created on first inbound message.
+   - If a mailbox doesn't exist for the team, it is created on first inbound message.
 
 2. **No custom domain**
    - If the inbound domain matches `INBOX_ROOT_DOMAIN`, the API looks up the mailbox by `{ domain: root, name: mailbox }`.
    - If no mailbox exists for the root domain, the webhook returns **404**.
 
 3. **Unknown non‑root domain**
-   - If the domain is not the root and there’s no `teamInboxSettings` match, the webhook returns **404**.
+   - If the domain is not the root and there's no `teamInboxSettings` match, the webhook returns **404**.
 
 ## Tags and mailbox names
 

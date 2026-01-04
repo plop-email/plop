@@ -72,6 +72,14 @@ export function Footer() {
               >
                 Documentation
               </a>
+              <a
+                href={siteConfig.githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                GitHub
+              </a>
               {siteConfig.calLink ? (
                 <a
                   href={siteConfig.calLink}

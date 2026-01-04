@@ -7,6 +7,26 @@ This is the end‑to‑end flow for inbound email.
 
 ## High‑level flow
 
+```mermaid
+flowchart LR
+    A[Inbound Email] --> B[Cloudflare Email Routing]
+    B --> C[Worker: apps/inbox]
+    C --> D[(R2 Storage)]
+    C --> E[Webhook POST]
+    E --> F[API: apps/api]
+    F --> G[(PostgreSQL)]
+    G --> H[UI: apps/app]
+
+    subgraph Storage
+        D
+    end
+
+    subgraph Processing
+        F
+        G
+    end
+```
+
 <Steps>
 <Step>
 **Cloudflare Email Routing**

@@ -7,6 +7,26 @@ Use the `GET /v1/messages/latest` endpoint to fetch the most recent email that m
 
 ## Typical flow
 
+```mermaid
+sequenceDiagram
+    participant Test as E2E Test
+    participant App as Your App
+    participant Email as Email Provider
+    participant Plop as Plop API
+
+    Test->>App: Trigger action (login, signup)
+    App->>Email: Send OTP/link email
+    Email->>Plop: Deliver via inbox worker
+
+    loop Poll until found
+        Test->>Plop: GET /v1/messages/latest
+        Plop-->>Test: 404 or message
+    end
+
+    Test->>Test: Extract OTP/token
+    Test->>App: Submit OTP/token
+```
+
 <Steps>
 <Step>
 **Send the email**
