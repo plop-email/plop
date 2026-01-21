@@ -24,7 +24,12 @@ export const users = pgTable("users", {
 
 export const teamRole = pgEnum("team_role", ["owner", "member"]);
 
-export const teamPlan = pgEnum("team_plan", ["starter", "pro", "enterprise"]);
+export const teamPlan = pgEnum("team_plan", [
+  "starter",
+  "team",
+  "pro",
+  "enterprise",
+]);
 
 export const billingCycle = pgEnum("billing_cycle", ["monthly", "yearly"]);
 

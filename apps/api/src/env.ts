@@ -22,6 +22,8 @@ const envSchema = z.object({
   POLAR_WEBHOOK_SECRET: z.string().min(1).optional(),
   POLAR_STARTER_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
   POLAR_STARTER_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
+  POLAR_TEAM_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
+  POLAR_TEAM_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
   POLAR_PRO_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
   POLAR_PRO_YEARLY_PRODUCT_ID: z.string().min(1).optional(),
   POLAR_ENTERPRISE_MONTHLY_PRODUCT_ID: z.string().min(1).optional(),
@@ -51,6 +53,8 @@ export const env = envSchema.parse({
   POLAR_STARTER_MONTHLY_PRODUCT_ID:
     process.env.POLAR_STARTER_MONTHLY_PRODUCT_ID,
   POLAR_STARTER_YEARLY_PRODUCT_ID: process.env.POLAR_STARTER_YEARLY_PRODUCT_ID,
+  POLAR_TEAM_MONTHLY_PRODUCT_ID: process.env.POLAR_TEAM_MONTHLY_PRODUCT_ID,
+  POLAR_TEAM_YEARLY_PRODUCT_ID: process.env.POLAR_TEAM_YEARLY_PRODUCT_ID,
   POLAR_PRO_MONTHLY_PRODUCT_ID: process.env.POLAR_PRO_MONTHLY_PRODUCT_ID,
   POLAR_PRO_YEARLY_PRODUCT_ID: process.env.POLAR_PRO_YEARLY_PRODUCT_ID,
   POLAR_ENTERPRISE_MONTHLY_PRODUCT_ID:

@@ -48,22 +48,16 @@ export function Header() {
           {/* Nav Links */}
           <nav className="hidden md:flex items-center gap-8">
             <Link
-              href="/#how-it-works"
+              href="/use-cases"
               className="text-white text-sm hover:underline underline-offset-4 transition-all"
             >
-              Product
+              Use Cases
             </Link>
             <Link
-              href="/#docs"
+              href="/integrations"
               className="text-white text-sm hover:underline underline-offset-4 transition-all"
             >
-              API
-            </Link>
-            <Link
-              href="/#security"
-              className="text-white text-sm hover:underline underline-offset-4 transition-all"
-            >
-              Security
+              Integrations
             </Link>
             <Link
               href="/#get-started"

@@ -1,4 +1,4 @@
-import { isReservedMailboxName } from "@plop/billing";
+import { getPlanEntitlements, isReservedMailboxName } from "@plop/billing";
 import {
   inboxMailboxes,
   teamInboxSettings,
@@ -13,6 +13,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
 import { sendTeamInviteEmail } from "../../utils/email";
+import type { TRPCContext } from "../init";
 import { createTRPCRouter, protectedProcedure, teamProcedure } from "../init";
 
 const rootDomain =
@@ -201,7 +202,51 @@ function normalizeRows<T>(result: unknown): T[] {
   return [];
 }
 
-const trialPlanSchema = z.enum(["starter", "pro"]);
+const trialPlanSchema = z.enum(["starter", "team", "pro"]);
+
+async function getTeamPlan(ctx: { db: TRPCContext["db"]; teamId: string }) {
+  const [team] = await ctx.db
+    .select({ plan: teams.plan })
+    .from(teams)
+    .where(eq(teams.id, ctx.teamId))
+    .limit(1);
+
+  return team?.plan ?? "starter";
+}
+
+async function assertTeamMemberLimit(ctx: {
+  db: TRPCContext["db"];
+  teamId: string;
+}) {
+  const plan = await getTeamPlan(ctx);
+  const entitlements = getPlanEntitlements(plan);
+
+  if (typeof entitlements.teamMembers === "number") {
+    // Count existing members + pending invites
+    const [memberCount] = await ctx.db
+      .select({ count: sql<number>`count(*)` })
+      .from(teamMemberships)
+      .where(eq(teamMemberships.teamId, ctx.teamId));
+
+    const [inviteCount] = await ctx.db
+      .select({ count: sql<number>`count(*)` })
+      .from(teamInvites)
+      .where(
+        and(eq(teamInvites.teamId, ctx.teamId), isNull(teamInvites.acceptedAt)),
+      );
+
+    const totalMembers =
+      Number(memberCount?.count ?? 0) + Number(inviteCount?.count ?? 0);
+
+    if (totalMembers >= entitlements.teamMembers) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message:
+          "Team member limit reached for your plan. Upgrade to invite more.",
+      });
+    }
+  }
+}
 
 export const teamRouter = createTRPCRouter({
   current: teamProcedure.query(async ({ ctx }) => {
@@ -503,6 +548,7 @@ export const teamRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       requireOwner(ctx.teamRole);
+      await assertTeamMemberLimit(ctx);
 
       const [existing] = await ctx.db
         .select()

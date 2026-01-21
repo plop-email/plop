@@ -1,4 +1,4 @@
-export type PlanTier = "starter" | "pro" | "enterprise";
+export type PlanTier = "starter" | "team" | "pro" | "enterprise";
 export type BillingCycle = "monthly" | "yearly";
 
 export type PlanEntitlements = {
@@ -7,6 +7,11 @@ export type PlanEntitlements = {
   emailsPerMonth: number | null;
   customDomains: boolean;
   retentionDays: number | null;
+  teamMembers: number | null;
+  apiKeys: number | null;
+  webhooks: boolean;
+  maxAttachmentSizeMb: number;
+  rateLimit: number; // requests per minute
 };
 
 export type PlanPricing = {
@@ -24,88 +29,145 @@ export type PlanDefinition = {
   pricing: PlanPricing;
   entitlements: PlanEntitlements;
   highlights: string[];
+  badge?: string;
 };
 
 export const DEFAULT_PLAN_TIER: PlanTier = "pro";
 
+/**
+ * Plan catalog with competitive pricing for market entry.
+ *
+ * Pricing rationale:
+ * - Starter $5/mo: Undercuts Mailosaur ($9), Mailtrap ($14), MailSlurp ($19)
+ * - Team $19/mo: Fills gap for small teams, cheaper than Mailtrap Team ($34)
+ * - Pro $49/mo: Cheaper than Mailosaur Business ($80), Mailtrap Business ($99)
+ * - Enterprise: Custom pricing for large organizations
+ */
 export const PLAN_CATALOG: Record<PlanTier, PlanDefinition> = {
   starter: {
     tier: "starter",
     name: "Starter",
-    shortDescription: "One inbox with unlimited tags.",
+    shortDescription: "For solo developers and side projects.",
     longDescription:
-      "Best for solo test suites that only need a single mailbox and lots of tag routing.",
+      "Perfect for individual developers testing email flows in personal projects, side projects, or learning environments.",
     pricing: {
-      monthly: 6.99,
-      yearly: 59.88,
+      monthly: 5,
+      yearly: 48, // $4/mo equivalent, 20% savings
       currency: "USD",
     },
     entitlements: {
       mailboxes: 1,
-      tags: null,
+      tags: null, // unlimited
       emailsPerMonth: 5000,
       customDomains: false,
-      retentionDays: 14,
+      retentionDays: 7,
+      teamMembers: 1,
+      apiKeys: 1,
+      webhooks: false,
+      maxAttachmentSizeMb: 5,
+      rateLimit: 60,
     },
     highlights: [
-      "1 email address",
+      "1 mailbox",
+      "5,000 emails/month",
+      "7-day retention",
       "Unlimited tags",
-      "5,000 emails / month",
-      "14-day retention",
-      "Shared domain",
+      "1 API key",
+    ],
+  },
+  team: {
+    tier: "team",
+    name: "Team",
+    shortDescription: "For small teams and growing projects.",
+    longDescription:
+      "Scale your email testing across multiple environments and team members with 5 dedicated mailboxes.",
+    badge: "Popular",
+    pricing: {
+      monthly: 19,
+      yearly: 182, // $15.17/mo equivalent, 20% savings
+      currency: "USD",
+    },
+    entitlements: {
+      mailboxes: 5,
+      tags: null, // unlimited
+      emailsPerMonth: 25000,
+      customDomains: false,
+      retentionDays: 30,
+      teamMembers: 5,
+      apiKeys: 3,
+      webhooks: true,
+      maxAttachmentSizeMb: 10,
+      rateLimit: 300,
+    },
+    highlights: [
+      "5 mailboxes",
+      "25,000 emails/month",
+      "30-day retention",
+      "Webhooks",
+      "5 team members",
     ],
   },
   pro: {
     tier: "pro",
     name: "Pro",
-    shortDescription: "10 email addresses for growing teams.",
+    shortDescription: "For growing companies with advanced needs.",
     longDescription:
-      "Scale inbox coverage across products, environments, and teams with 10 mailboxes.",
+      "Enterprise-grade email testing with extended retention, higher limits, and priority support.",
     pricing: {
       monthly: 49,
-      yearly: 468,
+      yearly: 470, // $39.17/mo equivalent, 20% savings
       currency: "USD",
     },
     entitlements: {
-      mailboxes: 10,
-      tags: null,
-      emailsPerMonth: 60000,
+      mailboxes: 20,
+      tags: null, // unlimited
+      emailsPerMonth: 100000,
       customDomains: false,
       retentionDays: 90,
+      teamMembers: 15,
+      apiKeys: 10,
+      webhooks: true,
+      maxAttachmentSizeMb: 25,
+      rateLimit: 1000,
     },
     highlights: [
-      "10 email addresses",
-      "Unlimited tags",
-      "60,000 emails / month",
+      "20 mailboxes",
+      "100,000 emails/month",
       "90-day retention",
-      "Shared domain",
+      "15 team members",
+      "Priority support",
     ],
   },
   enterprise: {
     tier: "enterprise",
     name: "Enterprise",
-    shortDescription: "Custom domains and advanced routing.",
+    shortDescription: "Custom domains and enterprise security.",
     longDescription:
-      "Bring your own subdomains, advanced controls, and priority support.",
+      "Tailored solutions with custom subdomains, SSO/SAML, dedicated support, and compliance features.",
     comingSoon: true,
     pricing: {
-      monthly: 0,
+      monthly: 0, // Custom pricing
       yearly: 0,
       currency: "USD",
     },
     entitlements: {
-      mailboxes: null,
+      mailboxes: null, // unlimited
       tags: null,
-      emailsPerMonth: null,
+      emailsPerMonth: null, // unlimited
       customDomains: true,
-      retentionDays: null,
+      retentionDays: null, // custom
+      teamMembers: null, // unlimited
+      apiKeys: null, // unlimited
+      webhooks: true,
+      maxAttachmentSizeMb: 50,
+      rateLimit: 5000,
     },
     highlights: [
       "Custom subdomains",
       "Unlimited mailboxes",
-      "Priority support",
+      "SSO/SAML",
+      "Dedicated support",
       "Custom retention",
-      "Coming soon",
     ],
   },
 };
@@ -202,7 +264,6 @@ export const RESERVED_MAILBOX_NAMES = new Set([
 
   // Security
   "security",
-  "abuse",
   "spam",
   "phishing",
   "fraud",
@@ -275,9 +336,6 @@ export const RESERVED_MAILBOX_NAMES = new Set([
   "tmp",
   "trash",
   "junk",
-  "spam",
-  "test",
-  "testing",
   "qa",
 
   // Special Values
@@ -402,4 +460,36 @@ export function getBillingPeriodStart(date = new Date()) {
 
 export function getBillingPeriodEnd(date = new Date()) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+}
+
+/**
+ * Check if a plan tier is valid for selection (not coming soon)
+ */
+export function isPlanAvailable(plan: PlanTier): boolean {
+  return !PLAN_CATALOG[plan].comingSoon;
+}
+
+/**
+ * Get all available (non-coming-soon) plans
+ */
+export function getAvailablePlans(): PlanDefinition[] {
+  return Object.values(PLAN_CATALOG).filter((plan) => !plan.comingSoon);
+}
+
+/**
+ * Get all plans including coming soon
+ */
+export function getAllPlans(): PlanDefinition[] {
+  return Object.values(PLAN_CATALOG);
+}
+
+/**
+ * Calculate annual savings percentage
+ */
+export function getAnnualSavingsPercent(plan: PlanTier): number {
+  const pricing = PLAN_CATALOG[plan].pricing;
+  if (pricing.monthly === 0) return 0;
+  const annualIfMonthly = pricing.monthly * 12;
+  const savings = ((annualIfMonthly - pricing.yearly) / annualIfMonthly) * 100;
+  return Math.round(savings);
 }

@@ -7,14 +7,17 @@ import {
 } from "@plop/billing";
 import { getProductIdForPlan } from "@plop/billing/polar";
 import {
+  apiKeys,
   inboxMailboxes,
   inboxMessages,
   teamEmailUsage,
   teamInboxSettings,
+  teamInvites,
+  teamMemberships,
   teams,
 } from "@plop/db/schema";
 import { TRPCError } from "@trpc/server";
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
 import { polar, polarEnabled } from "../../utils/polar";
@@ -38,8 +41,8 @@ function requirePolar() {
 }
 
 const billingCycleSchema = z.enum(["monthly", "yearly"]);
-const planTierSchema = z.enum(["starter", "pro", "enterprise"]);
-const trialPlanSchema = z.enum(["starter", "pro"]);
+const planTierSchema = z.enum(["starter", "team", "pro", "enterprise"]);
+const trialPlanSchema = z.enum(["starter", "team", "pro"]);
 
 async function getStarterEligibility(ctx: {
   db: TRPCContext["db"];
@@ -137,11 +140,37 @@ export const billingRouter = createTRPCRouter({
     const messageCount = Number(messagesCountRow?.count ?? 0);
     const emailsUsed = Math.max(usageCount, messageCount);
 
+    // Count API keys
+    const [apiKeyCountRow] = await ctx.db
+      .select({ count: sql<number>`count(*)` })
+      .from(apiKeys)
+      .where(eq(apiKeys.teamId, ctx.teamId));
+
+    // Count team members + pending invites
+    const [memberCountRow] = await ctx.db
+      .select({ count: sql<number>`count(*)` })
+      .from(teamMemberships)
+      .where(eq(teamMemberships.teamId, ctx.teamId));
+
+    const [inviteCountRow] = await ctx.db
+      .select({ count: sql<number>`count(*)` })
+      .from(teamInvites)
+      .where(
+        and(eq(teamInvites.teamId, ctx.teamId), isNull(teamInvites.acceptedAt)),
+      );
+
+    const teamMembersUsed =
+      Number(memberCountRow?.count ?? 0) + Number(inviteCountRow?.count ?? 0);
+
     return {
       mailboxesUsed: Number(mailboxCountRow?.count ?? 0),
       mailboxesLimit: entitlements.mailboxes,
       emailsUsed,
       emailsLimit: entitlements.emailsPerMonth,
+      apiKeysUsed: Number(apiKeyCountRow?.count ?? 0),
+      apiKeysLimit: entitlements.apiKeys,
+      teamMembersUsed,
+      teamMembersLimit: entitlements.teamMembers,
       periodStart,
       periodEnd,
     };

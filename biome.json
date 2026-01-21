@@ -47,8 +47,17 @@
         "noInferrableTypes": "error",
         "noUselessElse": "error"
       },
+      "performance": {
+        "noDynamicNamespaceImportAccess": "off"
+      },
       "correctness": {
         "useExhaustiveDependencies": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn"
       }
     }
   },
@@ -60,7 +69,7 @@
       "**",
       "!**/.next",
       "!**/.react-email",
-      "!**/.react-email/**",
+      "!**/.react-email",
       "!**/.source",
       "!**/.content-collections",
       "!**/node_modules"

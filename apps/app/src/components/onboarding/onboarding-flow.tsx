@@ -45,7 +45,8 @@ type OnboardingStep = (typeof onboardingSteps)[number];
 
 const isOnboardingPlan = (
   value: string | null | undefined,
-): value is TrialPlan => value === "starter" || value === "pro";
+): value is TrialPlan =>
+  value === "starter" || value === "team" || value === "pro";
 
 const stepIndexMap: Record<OnboardingStep, number> = {
   profile: 1,

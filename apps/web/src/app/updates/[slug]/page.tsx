@@ -1,10 +1,10 @@
-import Image from "next/image";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
+import { GradientText } from "@/components/gradient-text";
 import { CustomMDX } from "@/components/mdx";
 import { PostAuthor } from "@/components/post-author";
 import { PostStatus } from "@/components/post-status";
-import { GradientText } from "@/components/gradient-text";
 import { RecommendedArticles } from "@/components/recommended-articles";
 import { Section } from "@/components/section";
 import { UpdatesToolbar } from "@/components/updates-toolbar";
@@ -83,7 +83,6 @@ export default async function Page(props: {
       <script
         type="application/ld+json"
         suppressHydrationWarning
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: Required for structured data
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",

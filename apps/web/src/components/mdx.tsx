@@ -1,11 +1,11 @@
-import Image from "next/image";
-import { MDXRemote } from "next-mdx-remote/rsc";
-import Link from "next/link";
-import type React from "react";
-import { highlight } from "sugar-high";
-import type { ReactNode } from "react";
 import { cn } from "@plop/ui/cn";
+import Image from "next/image";
+import Link from "next/link";
+import { MDXRemote } from "next-mdx-remote/rsc";
+import type React from "react";
+import type { ReactNode } from "react";
 import remarkGfm from "remark-gfm";
+import { highlight } from "sugar-high";
 
 interface CustomLinkProps
   extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -98,7 +98,6 @@ function Code({ children, className, ...props }: CodeProps) {
   return (
     <code
       className={cn("font-mono text-sm text-white", className)}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: Code is sanitized by sugar-high
       dangerouslySetInnerHTML={{ __html: codeHTML }}
       {...props}
     />

@@ -1,6 +1,6 @@
-import type React from "react";
 import type { Viewport } from "next";
 import PlausibleProvider from "next-plausible";
+import type React from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
@@ -44,7 +44,6 @@ export default function RootLayout({
         <PlausibleProvider domain="plop.email" />
         <script
           type="application/ld+json"
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: known good
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(jsonLd),
           }}

@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <footer className="border-t border-white/12">
       <div className="mx-auto max-w-[1120px] px-6 lg:px-8 py-12">
-        <div className="grid gap-10 md:grid-cols-[1.2fr_repeat(3,auto)]">
+        <div className="grid gap-10 md:grid-cols-[1.2fr_repeat(4,auto)]">
           <div>
             <Link
               href="/"
@@ -63,6 +63,41 @@ export function Footer() {
 
           <div className="space-y-3">
             <p className="text-xs uppercase tracking-widest text-white/60">
+              Solutions
+            </p>
+            <div className="flex flex-col gap-2 text-sm text-[#A3A7AE]">
+              <Link
+                href="/use-cases"
+                className="hover:text-white transition-colors"
+              >
+                Use Cases
+              </Link>
+              <Link
+                href="/integrations"
+                className="hover:text-white transition-colors"
+              >
+                Integrations
+              </Link>
+              <Link href="/for" className="hover:text-white transition-colors">
+                Solutions By Role
+              </Link>
+              <Link
+                href="/compare"
+                className="hover:text-white transition-colors"
+              >
+                Compare
+              </Link>
+              <Link
+                href="/examples"
+                className="hover:text-white transition-colors"
+              >
+                Code Examples
+              </Link>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-widest text-white/60">
               Resources
             </p>
             <div className="flex flex-col gap-2 text-sm text-[#A3A7AE]">
@@ -72,6 +107,15 @@ export function Footer() {
               >
                 Documentation
               </a>
+              <Link
+                href="/glossary"
+                className="hover:text-white transition-colors"
+              >
+                Glossary
+              </Link>
+              <Link href="/faq" className="hover:text-white transition-colors">
+                FAQ
+              </Link>
               <a
                 href={siteConfig.githubUrl}
                 target="_blank"

@@ -1,10 +1,15 @@
-import { PLAN_CATALOG, formatUsd, getMonthlyEquivalent } from "@plop/billing";
+import { formatUsd, getMonthlyEquivalent, PLAN_CATALOG } from "@plop/billing";
 import { Button } from "@plop/ui/button";
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { siteConfig } from "@/lib/site";
 
-const plans = [PLAN_CATALOG.starter, PLAN_CATALOG.pro, PLAN_CATALOG.enterprise];
+const plans = [
+  PLAN_CATALOG.starter,
+  PLAN_CATALOG.team,
+  PLAN_CATALOG.pro,
+  PLAN_CATALOG.enterprise,
+];
 
 export function PricingSection() {
   return (
@@ -19,19 +24,27 @@ export function PricingSection() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan) => {
             const monthlyEquivalent = getMonthlyEquivalent(plan.tier);
             const isComingSoon = plan.comingSoon;
+            const isHighlighted = !!plan.badge;
             const ctaHref = `${siteConfig.appUrl}/sign-up?plan=${plan.tier}`;
 
             return (
               <div
                 key={plan.tier}
-                className={`flex flex-col  border border-white/12 bg-[#111418] p-6 ${
-                  plan.tier === "pro" ? "shadow-[0_0_0_1px_#B8FF2C40]" : ""
+                className={`relative flex flex-col border border-white/12 bg-[#111418] p-6 ${
+                  isHighlighted ? "shadow-[0_0_0_1px_#B8FF2C40]" : ""
                 }`}
               >
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="bg-[#B8FF2C] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#0B0D0F]">
+                      {plan.badge}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <h3 className="font-heading text-2xl text-white">
                     {plan.name}
@@ -78,19 +91,19 @@ export function PricingSection() {
                   ))}
                 </ul>
 
-                <div className="mt-8">
+                <div className="mt-auto pt-8">
                   {isComingSoon ? (
                     <Button
                       className="w-full bg-white/10 text-white hover:bg-white/25"
                       disabled
                     >
-                      Join waitlist
+                      Contact us
                     </Button>
                   ) : (
                     <Button
                       asChild
                       className={`w-full font-semibold ${
-                        plan.tier === "pro"
+                        isHighlighted
                           ? "bg-[#B8FF2C] text-[#0B0D0F] hover:bg-[#B8FF2C]/90"
                           : "bg-white/10 text-white hover:bg-white/25"
                       }`}
@@ -99,7 +112,7 @@ export function PricingSection() {
                         href={ctaHref}
                         className="inline-flex items-center gap-2"
                       >
-                        Start {plan.name}
+                        Start free trial
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -110,8 +123,17 @@ export function PricingSection() {
           })}
         </div>
 
-        <div className="mt-8 text-center text-xs text-[#A3A7AE]">
-          All plans include unlimited tags and API access. Taxes may apply.
+        <div className="mt-8 text-center text-sm text-[#A3A7AE]">
+          <p className="mb-1">
+            <span className="text-[#B8FF2C] font-medium">
+              14-day free trial
+            </span>{" "}
+            on all plans. No credit card required.
+          </p>
+          <p className="text-xs">
+            All plans include unlimited tags and API access. Save 20% with
+            annual billing.
+          </p>
         </div>
       </div>
     </section>

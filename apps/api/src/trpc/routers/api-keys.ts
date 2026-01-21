@@ -1,4 +1,4 @@
-import { isTrialExpired } from "@plop/billing";
+import { getPlanEntitlements, isTrialExpired } from "@plop/billing";
 import {
   ApiKeyHashConflictError,
   createApiKeyWithSecret,
@@ -83,6 +83,34 @@ async function assertTrialNotExpired(ctx: {
   });
 }
 
+async function getTeamPlan(ctx: { db: TRPCContext["db"]; teamId: string }) {
+  const [team] = await ctx.db
+    .select({ plan: teams.plan })
+    .from(teams)
+    .where(eq(teams.id, ctx.teamId))
+    .limit(1);
+
+  return team?.plan ?? "starter";
+}
+
+async function assertApiKeyLimit(ctx: {
+  db: TRPCContext["db"];
+  teamId: string;
+}) {
+  const plan = await getTeamPlan(ctx);
+  const entitlements = getPlanEntitlements(plan);
+
+  if (typeof entitlements.apiKeys === "number") {
+    const existingKeys = await listApiKeysByTeam(ctx.db, ctx.teamId);
+    if (existingKeys.length >= entitlements.apiKeys) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "API key limit reached for your plan. Upgrade to create more.",
+      });
+    }
+  }
+}
+
 export const apiKeysRouter = createTRPCRouter({
   list: teamProcedure.query(async ({ ctx }) => {
     return listApiKeysByTeam(ctx.db, ctx.teamId);
@@ -93,6 +121,7 @@ export const apiKeysRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       requireOwner(ctx.teamRole);
       await assertTrialNotExpired(ctx);
+      await assertApiKeyLimit(ctx);
 
       let mailboxName: string | null = null;
       if (input.scope === "email.mailbox") {

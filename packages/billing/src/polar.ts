@@ -22,6 +22,10 @@ export function getPlanProductIds(env = process.env): PlanProductIds {
       monthly: env.POLAR_STARTER_MONTHLY_PRODUCT_ID,
       yearly: env.POLAR_STARTER_YEARLY_PRODUCT_ID,
     },
+    team: {
+      monthly: env.POLAR_TEAM_MONTHLY_PRODUCT_ID,
+      yearly: env.POLAR_TEAM_YEARLY_PRODUCT_ID,
+    },
     pro: {
       monthly: env.POLAR_PRO_MONTHLY_PRODUCT_ID,
       yearly: env.POLAR_PRO_YEARLY_PRODUCT_ID,

@@ -1,11 +1,13 @@
 "use client";
 
 import {
+  type PlanTier,
   PLAN_CATALOG,
   formatUsd,
   getPriceForCycle,
   isTrialExpired,
   TRIAL_DAYS,
+  getAvailablePlans,
 } from "@plop/billing";
 import { Button } from "@plop/ui/button";
 import {
@@ -28,6 +30,8 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useTRPC } from "@/trpc/client";
 
+const availablePlans = getAvailablePlans();
+
 const HIDDEN_PATHS = ["/settings", "/support"];
 
 export function TrialLockModal() {
@@ -39,7 +43,7 @@ export function TrialLockModal() {
   );
 
   const [cycle, setCycle] = useState<"monthly" | "yearly">("yearly");
-  const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro">("pro");
+  const [selectedPlan, setSelectedPlan] = useState<PlanTier>("team");
 
   const checkoutMutation = useMutation(
     trpc.billing.createCheckout.mutationOptions({
@@ -71,7 +75,7 @@ export function TrialLockModal() {
 
   return (
     <Dialog open={true} onOpenChange={() => {}}>
-      <DialogContent className="max-w-[640px] [&>button]:hidden">
+      <DialogContent className="max-w-[800px] [&>button]:hidden">
         <DialogHeader>
           <DialogTitle>Your trial has ended</DialogTitle>
           <DialogDescription>
@@ -93,27 +97,35 @@ export function TrialLockModal() {
             </Tabs>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(["starter", "pro"] as const).map((tier) => {
-              const planDef = PLAN_CATALOG[tier];
-              const isSelected = selectedPlan === tier;
-              const isDisabled = tier === "starter" && !canChooseStarter;
+          <div className="grid gap-3 sm:grid-cols-3">
+            {availablePlans.map((planDef) => {
+              const isSelected = selectedPlan === planDef.tier;
+              const isDisabled =
+                planDef.tier === "starter" && !canChooseStarter;
+              const isHighlighted = !!planDef.badge;
 
               return (
                 <Card
-                  key={tier}
-                  className={`cursor-pointer transition ${
+                  key={planDef.tier}
+                  className={`relative cursor-pointer transition ${
                     isSelected
                       ? "border-foreground"
                       : "border-border hover:border-foreground/50"
                   } ${isDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
                   onClick={() => {
-                    if (!isDisabled) setSelectedPlan(tier);
+                    if (!isDisabled) setSelectedPlan(planDef.tier);
                   }}
                 >
-                  <CardHeader className="space-y-1">
+                  {planDef.badge && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                      <span className="bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase text-primary-foreground">
+                        {planDef.badge}
+                      </span>
+                    </div>
+                  )}
+                  <CardHeader className="space-y-1 pb-2">
                     <CardTitle className="text-base">{planDef.name}</CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-xs">
                       {planDef.shortDescription}
                     </CardDescription>
                   </CardHeader>
@@ -125,8 +137,8 @@ export function TrialLockModal() {
                       </span>
                     </div>
                     <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                      {planDef.highlights.slice(0, 4).map((highlight) => (
-                        <li key={highlight}>{highlight}</li>
+                      {planDef.highlights.slice(0, 3).map((highlight) => (
+                        <li key={highlight}>• {highlight}</li>
                       ))}
                     </ul>
                   </CardContent>

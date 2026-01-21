@@ -31,7 +31,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTRPC } from "@/trpc/client";
 
-const plans = [PLAN_CATALOG.starter, PLAN_CATALOG.pro, PLAN_CATALOG.enterprise];
+const plans = [
+  PLAN_CATALOG.starter,
+  PLAN_CATALOG.team,
+  PLAN_CATALOG.pro,
+  PLAN_CATALOG.enterprise,
+];
 
 function formatDate(value: Date | string | null | undefined) {
   if (!value) return "";
@@ -206,7 +211,7 @@ export function TeamBillingSettings() {
             </TabsList>
           </Tabs>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {plans.map((plan) => {
               const isCurrent =
                 plan.tier === currentPlanTier &&
@@ -223,10 +228,17 @@ export function TeamBillingSettings() {
               return (
                 <div
                   key={plan.tier}
-                  className={`border border-border bg-muted/30 p-4 ${
+                  className={`relative border border-border bg-muted/30 p-4 ${
                     starterBlocked ? "opacity-60" : ""
-                  }`}
+                  } ${plan.badge ? "border-primary/30" : ""}`}
                 >
+                  {plan.badge && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                      <span className="bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase text-primary-foreground">
+                        {plan.badge}
+                      </span>
+                    </div>
+                  )}
                   <div className="text-sm font-semibold">{plan.name}</div>
                   <div className="mt-2 text-2xl font-semibold">
                     {isComingSoon ? "Coming soon" : formatUsd(price)}

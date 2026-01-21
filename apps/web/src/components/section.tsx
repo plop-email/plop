@@ -23,7 +23,7 @@ export function Section({
           className={cn(
             "w-full",
             !noBorder &&
-              "border border-white/12 bg-[#111418]/80 backdrop-blur shadow-[0_0_0_1px_rgba(255,255,255,0.02)]",
+              "border border-white/12 bg-[#111418]/80 backdrop-blur shadow-[0_0_0_1px_rgba(255,255,255,0.02)] p-6 md:p-8 lg:p-10",
           )}
         >
           {children}

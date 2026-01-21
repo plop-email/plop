@@ -4,7 +4,12 @@
       "Bash(bun add:*)",
       "Bash(bun run typecheck:*)",
       "Bash(bun run format:*)",
-      "Bash(bun run lint)"
+      "Bash(bun run lint)",
+      "Skill(programmatic-seo)",
+      "Bash(bun run:*)",
+      "Bash(grep:*)",
+      "Skill(pricing-strategy)",
+      "WebSearch"
     ]
   }
 }

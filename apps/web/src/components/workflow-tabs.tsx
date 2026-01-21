@@ -114,7 +114,6 @@ export function WorkflowTabs() {
                 <pre className="font-mono text-[12px] sm:text-[13px] text-white/80 overflow-x-auto leading-relaxed">
                   <code
                     className="block"
-                    // biome-ignore lint/security/noDangerouslySetInnerHtml: Code is sanitized by sugar-high
                     dangerouslySetInnerHTML={{
                       __html:
                         highlightedSnippets[

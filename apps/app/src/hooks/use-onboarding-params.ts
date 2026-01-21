@@ -10,7 +10,7 @@ export const onboardingSteps = [
   "invite",
 ] as const;
 
-export const onboardingPlanOptions = ["starter", "pro"] as const;
+export const onboardingPlanOptions = ["starter", "team", "pro"] as const;
 
 export const onboardingParamsSchema = {
   step: parseAsStringLiteral(onboardingSteps),

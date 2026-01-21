@@ -3,12 +3,12 @@
 import type { Mermaid as MermaidAPI } from "mermaid";
 import { useTheme } from "next-themes";
 import {
+  type ComponentProps,
+  type ReactElement,
   useEffect,
   useId,
   useRef,
   useState,
-  type ComponentProps,
-  type ReactElement,
 } from "react";
 
 let mermaidInstance: MermaidAPI | null = null;
@@ -78,7 +78,6 @@ export function Mermaid({
     <div
       ref={containerRef}
       className="mermaid-diagram overflow-x-auto [&_svg]:mx-auto [&_svg]:max-w-full"
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: Mermaid generates SVG
       dangerouslySetInnerHTML={{ __html: svg }}
       {...props}
     />
