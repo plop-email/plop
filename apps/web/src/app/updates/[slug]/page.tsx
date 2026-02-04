@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
   return {
     title: `${title} | plop.email`,
     description,
-    authors: [{ name: siteConfig.author }],
+    authors: [{ name: siteConfig.author, url: "https://x.com/vahaah" }],
     alternates: {
       canonical: url,
     },
@@ -46,6 +46,9 @@ export async function generateMetadata(props: {
       description,
       type: "article",
       publishedTime: publishedAt,
+      modifiedTime: publishedAt,
+      authors: [siteConfig.author],
+      section: "Product Updates",
       url,
       images: [{ url: ogImage }],
     },
@@ -54,6 +57,7 @@ export async function generateMetadata(props: {
       title,
       description,
       images: [ogImage],
+      creator: siteConfig.twitter,
     },
   };
 }
@@ -95,6 +99,23 @@ export default async function Page(props: {
               ? `${siteConfig.url}${post.metadata.image}`
               : `${siteConfig.url}/opengraph-image.png`,
             url: `${siteConfig.url}/updates/${post.slug}`,
+            author: {
+              "@type": "Person",
+              name: siteConfig.author,
+              url: "https://x.com/vahaah",
+            },
+            publisher: {
+              "@type": "Organization",
+              name: siteConfig.name,
+              logo: {
+                "@type": "ImageObject",
+                url: `${siteConfig.url}/logo.png`,
+              },
+            },
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": `${siteConfig.url}/updates/${post.slug}`,
+            },
           }),
         }}
       />

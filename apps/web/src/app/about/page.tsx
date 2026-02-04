@@ -23,7 +23,7 @@ export default function Page() {
 
         <div className="space-y-12">
           <section>
-            <GradientText as="h3" className="font-medium text-xl mb-4">
+            <GradientText as="h2" className="font-medium text-xl mb-4">
               Our Mission
             </GradientText>
             <p className="text-[#A3A7AE] leading-relaxed">
@@ -36,7 +36,7 @@ export default function Page() {
           </section>
 
           <section>
-            <GradientText as="h3" className="font-medium text-xl mb-4">
+            <GradientText as="h2" className="font-medium text-xl mb-4">
               Built for real workflows
             </GradientText>
             <p className="text-[#A3A7AE] leading-relaxed mb-8">

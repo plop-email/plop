@@ -1,8 +1,49 @@
+import type { PlanDefinition } from "@plop/billing";
 import { formatUsd, getMonthlyEquivalent, PLAN_CATALOG } from "@plop/billing";
 import { Button } from "@plop/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
+
+function generatePricingJsonLd(planList: PlanDefinition[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: siteConfig.name,
+    description: siteConfig.description,
+    brand: {
+      "@type": "Brand",
+      name: siteConfig.name,
+    },
+    offers: planList
+      .filter((plan) => !plan.comingSoon)
+      .map((plan) => ({
+        "@type": "Offer",
+        name: plan.name,
+        description: plan.shortDescription,
+        price: plan.pricing.monthly,
+        priceCurrency: "USD",
+        priceSpecification: [
+          {
+            "@type": "UnitPriceSpecification",
+            price: plan.pricing.monthly,
+            priceCurrency: "USD",
+            unitText: "MONTH",
+            billingDuration: "P1M",
+          },
+          {
+            "@type": "UnitPriceSpecification",
+            price: plan.pricing.yearly,
+            priceCurrency: "USD",
+            unitText: "YEAR",
+            billingDuration: "P1Y",
+          },
+        ],
+        availability: "https://schema.org/InStock",
+        url: `${siteConfig.appUrl}/sign-up?plan=${plan.tier}`,
+      })),
+  };
+}
 
 const plans = [
   PLAN_CATALOG.starter,
@@ -12,8 +53,15 @@ const plans = [
 ];
 
 export function PricingSection() {
+  const pricingJsonLd = generatePricingJsonLd(plans);
+
   return (
     <section id="get-started" className="border-b border-white/12">
+      <script
+        type="application/ld+json"
+        // Safe: JSON-LD generated from trusted internal plan data, not user input
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingJsonLd) }}
+      />
       <div className="mx-auto max-w-[1120px] px-6 lg:px-8 py-20 sm:py-24">
         <div className="text-center mb-12">
           <h2 className="font-heading text-3xl lg:text-4xl text-white mb-4">
