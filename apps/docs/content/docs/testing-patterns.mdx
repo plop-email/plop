@@ -1,0 +1,323 @@
+---
+title: Testing Patterns
+description: Common email testing patterns for authentication, transactions, and notifications.
+---
+
+Practical patterns for testing common email workflows in your application.
+
+## Authentication Flows
+
+### Magic Link Authentication
+
+Test passwordless login with magic links:
+
+```typescript
+test('magic link grants access', async ({ page, request }) => {
+  const testEmail = `magic+${Date.now()}@in.plop.email`;
+
+  // Request magic link
+  await page.goto('/login');
+  await page.fill('[name="email"]', testEmail);
+  await page.click('text=Send Magic Link');
+
+  // Fetch email
+  await page.waitForTimeout(2000);
+  const response = await request.get(
+    'https://api.plop.email/v1/messages/latest',
+    {
+      params: { to: testEmail },
+      headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` },
+    }
+  );
+  const { data: email } = await response.json();
+
+  // Extract and use magic link
+  const linkMatch = email.htmlContent.match(/href="([^"]*magic[^"]*)"/);
+  expect(linkMatch).toBeTruthy();
+
+  await page.goto(linkMatch[1]);
+  await expect(page.locator('text=Dashboard')).toBeVisible();
+});
+```
+
+### OTP / 2FA Verification
+
+Extract and submit one-time passwords:
+
+```typescript
+test('2FA login with OTP', async ({ page, request }) => {
+  const testEmail = `otp+${Date.now()}@in.plop.email`;
+
+  // Login with credentials
+  await page.goto('/login');
+  await page.fill('[name="email"]', testEmail);
+  await page.fill('[name="password"]', 'SecurePass123!');
+  await page.click('button[type="submit"]');
+
+  // Wait for 2FA prompt
+  await expect(page.locator('text=Enter verification code')).toBeVisible();
+
+  // Fetch OTP email
+  const response = await request.get(
+    'https://api.plop.email/v1/messages/latest',
+    {
+      params: { to: testEmail },
+      headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` },
+    }
+  );
+  const { data: email } = await response.json();
+
+  // Extract 6-digit OTP
+  const otpMatch = email.textContent.match(/\b(\d{6})\b/);
+  expect(otpMatch).toBeTruthy();
+
+  // Submit OTP
+  await page.fill('[name="otp"]', otpMatch[1]);
+  await page.click('button:has-text("Verify")');
+
+  await expect(page.locator('text=Dashboard')).toBeVisible();
+});
+```
+
+### Password Reset
+
+Test the complete password reset flow:
+
+```typescript
+test('password reset email works', async ({ page, request }) => {
+  const testEmail = `reset+${Date.now()}@in.plop.email`;
+
+  // Request reset
+  await page.goto('/forgot-password');
+  await page.fill('[name="email"]', testEmail);
+  await page.click('button[type="submit"]');
+
+  // Fetch reset email
+  await page.waitForTimeout(2000);
+  const response = await request.get(
+    'https://api.plop.email/v1/messages/latest',
+    {
+      params: { to: testEmail },
+      headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` },
+    }
+  );
+  const { data: email } = await response.json();
+
+  // Verify and extract reset link
+  expect(email.subject).toContain('Reset');
+  const resetLink = email.htmlContent.match(/href="([^"]*reset[^"]*)"/)?.[1];
+  expect(resetLink).toBeDefined();
+
+  // Complete reset
+  await page.goto(resetLink);
+  await page.fill('[name="password"]', 'NewSecurePass123!');
+  await page.fill('[name="confirmPassword"]', 'NewSecurePass123!');
+  await page.click('button[type="submit"]');
+
+  await expect(page.locator('text=Password updated')).toBeVisible();
+});
+```
+
+## Transactional Emails
+
+### Order Confirmation
+
+Verify order details in confirmation emails:
+
+```typescript
+test('order confirmation has correct details', async () => {
+  const orderEmail = `order+${Date.now()}@in.plop.email`;
+  const orderData = {
+    items: [
+      { name: 'Pro Plan', price: 29.00 },
+      { name: 'Extra Seats', price: 30.00 },
+    ],
+    total: 59.00,
+  };
+
+  // Trigger order
+  await api.createOrder({ email: orderEmail, ...orderData });
+  await new Promise(r => setTimeout(r, 2000));
+
+  // Fetch confirmation
+  const response = await fetch(
+    `https://api.plop.email/v1/messages/latest?to=${orderEmail}`,
+    { headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` } }
+  );
+  const { data: email } = await response.json();
+
+  // Verify content
+  expect(email.subject).toContain('Order Confirmation');
+  expect(email.htmlContent).toContain('Pro Plan');
+  expect(email.htmlContent).toContain('Extra Seats');
+  expect(email.htmlContent).toMatch(/\$59\.00/);
+});
+```
+
+### Welcome Email with Personalization
+
+Test dynamic content rendering:
+
+```typescript
+test('welcome email is personalized', async () => {
+  const testEmail = `welcome+${Date.now()}@in.plop.email`;
+  const userName = "Sarah O'Brien";
+
+  await sendWelcomeEmail({ to: testEmail, name: userName });
+  await new Promise(r => setTimeout(r, 2000));
+
+  const response = await fetch(
+    `https://api.plop.email/v1/messages/latest?to=${testEmail}`,
+    { headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` } }
+  );
+  const { data: email } = await response.json();
+
+  // Verify personalization and escaping
+  expect(email.subject).toContain(userName);
+  expect(email.htmlContent).toContain(userName);
+  expect(email.htmlContent).toContain('Get Started');
+});
+```
+
+## Newsletter & Marketing
+
+### Double Opt-in Flow
+
+Test confirmation and welcome sequence:
+
+```typescript
+test('newsletter double opt-in', async ({ page, request }) => {
+  const testEmail = `newsletter+${Date.now()}@in.plop.email`;
+
+  // Subscribe
+  await page.goto('/');
+  await page.fill('[name="newsletter-email"]', testEmail);
+  await page.click('button:has-text("Subscribe")');
+  await expect(page.locator('text=Check your email')).toBeVisible();
+
+  // Get confirmation email
+  await page.waitForTimeout(2000);
+  let response = await request.get(
+    'https://api.plop.email/v1/messages/latest',
+    {
+      params: { to: testEmail },
+      headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` },
+    }
+  );
+  let { data: email } = await response.json();
+
+  expect(email.subject).toContain('Confirm');
+
+  // Click confirmation link
+  const confirmLink = email.htmlContent.match(/href="([^"]*confirm[^"]*)"/)?.[1];
+  await page.goto(confirmLink);
+  await expect(page.locator('text=Subscription confirmed')).toBeVisible();
+
+  // Verify welcome email arrives
+  await page.waitForTimeout(2000);
+  response = await request.get(
+    'https://api.plop.email/v1/messages/latest',
+    {
+      params: { to: testEmail },
+      headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` },
+    }
+  );
+  ({ data: email } = await response.json());
+
+  expect(email.subject).toContain('Welcome');
+  expect(email.htmlContent).toMatch(/unsubscribe/i);
+});
+```
+
+## Testing Best Practices
+
+### Unique Addresses Per Test
+
+Always generate unique emails to prevent test interference:
+
+```typescript
+// Good: Unique per test
+const testEmail = `test+${Date.now()}@in.plop.email`;
+const testEmail = `test+${crypto.randomUUID()}@in.plop.email`;
+
+// Bad: Shared across tests (causes race conditions)
+const testEmail = 'test@in.plop.email';
+```
+
+### Use `since` Parameter for Isolation
+
+Prevent fetching old emails from previous test runs:
+
+```typescript
+const since = new Date().toISOString();
+
+// Trigger email...
+
+const response = await fetch(
+  `https://api.plop.email/v1/messages/latest?to=${testEmail}&since=${since}`,
+  { headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` } }
+);
+```
+
+### Robust Polling with Timeout
+
+Handle variable email delivery times:
+
+```typescript
+async function waitForEmail(to: string, options: {
+  timeout?: number;
+  subject?: RegExp;
+} = {}) {
+  const { timeout = 10000, subject } = options;
+  const start = Date.now();
+
+  while (Date.now() - start < timeout) {
+    const response = await fetch(
+      `https://api.plop.email/v1/messages/latest?to=${encodeURIComponent(to)}`,
+      { headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` } }
+    );
+
+    if (response.ok) {
+      const { data } = await response.json();
+      if (data && (!subject || subject.test(data.subject))) {
+        return data;
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 1000));
+  }
+
+  throw new Error(`Timeout waiting for email to ${to}`);
+}
+
+// Usage
+const email = await waitForEmail(testEmail, {
+  timeout: 15000,
+  subject: /Reset/,
+});
+```
+
+### CI/CD Environment Variables
+
+Store API keys securely:
+
+```yaml
+# GitHub Actions
+- name: Run E2E tests
+  env:
+    PLOP_API_KEY: ${{ secrets.PLOP_API_KEY }}
+    TEST_MAILBOX: ci-${{ github.run_id }}
+```
+
+```bash
+# GitLab CI
+variables:
+  PLOP_API_KEY: $PLOP_API_KEY
+  TEST_MAILBOX: ci-${CI_PIPELINE_ID}
+```
+
+## Related Documentation
+
+- [Quick Start](/quick-start) — Get started in 5 minutes
+- [Messages API](/messages-api) — Full API reference
+- [E2E Email Polling](/e2e-email-polling) — Advanced polling with Playwright

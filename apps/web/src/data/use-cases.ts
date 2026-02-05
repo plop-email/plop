@@ -78,7 +78,7 @@ test('user receives welcome email after signup', async ({ page }) => {
 
   // Assert email content
   expect(email.subject).toContain('Welcome');
-  expect(email.html).toContain('Get started');
+  expect(email.htmlContent).toContain('Get started');
 });`,
     },
     benefits: [
@@ -148,7 +148,7 @@ test('password reset email contains valid link', async () => {
   const email = await plop.messages.latest({ to: userEmail });
 
   // Extract and validate reset link
-  const resetLink = email.html.match(/href="([^"]*reset[^"]*)"/)?.[1];
+  const resetLink = email.htmlContent.match(/href="([^"]*reset[^"]*)"/)?.[1];
   expect(resetLink).toBeDefined();
   expect(resetLink).toContain('/reset-password?token=');
 
@@ -222,11 +222,11 @@ test('password reset email contains valid link', async () => {
     timeout: 5000,
   });
 
-  expect(welcome.html).toContain('Test User');
-  expect(welcome.html).toContain('Get Started');
+  expect(welcome.htmlContent).toContain('Test User');
+  expect(welcome.htmlContent).toContain('Get Started');
 
   // Verify activation link
-  const activationLink = extractLink(welcome.html, 'activate');
+  const activationLink = extractLink(welcome.htmlContent, 'activate');
   const activateResponse = await fetch(activationLink);
   expect(activateResponse.ok).toBe(true);
 });`,
@@ -291,7 +291,7 @@ test('password reset email contains valid link', async () => {
 
   // Get the email
   const email = await plop.messages.latest({ to: userEmail });
-  const magicLink = extractMagicLink(email.html);
+  const magicLink = extractMagicLink(email.htmlContent);
 
   // First use should succeed
   const firstUse = await fetch(magicLink, { redirect: 'manual' });
@@ -409,6 +409,289 @@ jobs:
     ],
     relatedUseCases: ["e2e-testing", "transactional-emails"],
     relatedIntegrations: ["playwright", "jest", "pytest"],
+  },
+  {
+    slug: "otp-verification",
+    title: "OTP & 2FA Testing",
+    description: "Test one-time passwords and two-factor authentication flows",
+    metaDescription:
+      "Automate OTP and 2FA email testing. Extract verification codes programmatically and verify your authentication flows work correctly.",
+    icon: "KeyRound",
+    heroTitle: "Test OTP & 2FA Email Flows",
+    heroDescription:
+      "Extract one-time passwords and verification codes from emails. Test your two-factor authentication without manual copy-paste.",
+    problem: {
+      title: "OTP testing is tedious and error-prone",
+      points: [
+        "Manually checking email for codes slows down testing",
+        "Codes expire quickly, causing flaky tests",
+        "Copy-paste errors lead to false test failures",
+        "No way to automate 2FA flows in CI/CD",
+      ],
+    },
+    solution: {
+      title: "Automated OTP extraction with plop",
+      points: [
+        "Fetch emails via API and extract codes programmatically",
+        "Use regex patterns to parse any OTP format",
+        "Test expiration logic by timing your requests",
+        "Run 2FA tests in CI/CD alongside other E2E tests",
+      ],
+    },
+    codeExample: {
+      language: "typescript",
+      title: "Extracting OTP from Email",
+      code: `import { test, expect } from '@playwright/test';
+
+test('2FA login with OTP', async ({ page, request }) => {
+  const testEmail = \`otp+\${Date.now()}@in.plop.email\`;
+
+  // Login with credentials
+  await page.goto('/login');
+  await page.fill('[name="email"]', testEmail);
+  await page.fill('[name="password"]', 'SecurePass123!');
+  await page.click('button[type="submit"]');
+
+  // Wait for 2FA prompt
+  await expect(page.locator('text=Enter verification code')).toBeVisible();
+
+  // Fetch OTP email
+  const response = await request.get(
+    'https://api.plop.email/v1/messages/latest',
+    {
+      params: { to: testEmail },
+      headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` },
+    }
+  );
+  const email = await response.json();
+
+  // Extract 6-digit OTP code
+  const otpMatch = email.textContent.match(/\\b(\\d{6})\\b/);
+  expect(otpMatch).toBeTruthy();
+  const otpCode = otpMatch[1];
+
+  // Enter OTP
+  await page.fill('[name="otp"]', otpCode);
+  await page.click('button:has-text("Verify")');
+
+  // Verify login success
+  await expect(page.locator('text=Dashboard')).toBeVisible();
+});`,
+    },
+    benefits: [
+      {
+        title: "No More Manual Testing",
+        description:
+          "Extract OTP codes automatically without checking your inbox.",
+      },
+      {
+        title: "Fast Execution",
+        description:
+          "API-based retrieval is faster than IMAP polling or manual checks.",
+      },
+      {
+        title: "Expiration Testing",
+        description: "Test that expired codes are properly rejected.",
+      },
+      {
+        title: "CI/CD Compatible",
+        description: "Run 2FA tests as part of your automated pipeline.",
+      },
+    ],
+    relatedUseCases: ["magic-links", "transactional-emails"],
+    relatedIntegrations: ["playwright", "cypress"],
+  },
+  {
+    slug: "newsletter-testing",
+    title: "Newsletter Testing",
+    description: "Verify email signup flows and newsletter delivery",
+    metaDescription:
+      "Test newsletter signup forms and email delivery. Verify double opt-in flows, welcome sequences, and unsubscribe links work correctly.",
+    icon: "Newspaper",
+    heroTitle: "Test Newsletter Signups",
+    heroDescription:
+      "Verify your newsletter signup flow from form submission to inbox delivery. Test double opt-in, welcome emails, and unsubscribe functionality.",
+    problem: {
+      title: "Newsletter flows have many failure points",
+      points: [
+        "Double opt-in confirmation links may not work",
+        "Welcome emails may fail to send or render incorrectly",
+        "Unsubscribe links might be broken or missing",
+        "Hard to test across different email scenarios",
+      ],
+    },
+    solution: {
+      title: "End-to-end newsletter testing",
+      points: [
+        "Test the complete signup → confirm → welcome flow",
+        "Verify confirmation links work and redirect correctly",
+        "Check that unsubscribe links are present and functional",
+        "Test with unique emails to avoid list pollution",
+      ],
+    },
+    codeExample: {
+      language: "typescript",
+      title: "Testing Newsletter Double Opt-in",
+      code: `import { test, expect } from '@playwright/test';
+
+test('newsletter double opt-in flow', async ({ page, request }) => {
+  const testEmail = \`newsletter+\${Date.now()}@in.plop.email\`;
+
+  // Submit newsletter signup form
+  await page.goto('/');
+  await page.fill('[name="newsletter-email"]', testEmail);
+  await page.click('button:has-text("Subscribe")');
+  await expect(page.locator('text=Check your email')).toBeVisible();
+
+  // Fetch confirmation email
+  const confirmEmail = await request.get(
+    'https://api.plop.email/v1/messages/latest',
+    {
+      params: { to: testEmail },
+      headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` },
+    }
+  );
+  const { htmlContent, subject } = await confirmEmail.json();
+
+  expect(subject).toContain('Confirm');
+
+  // Extract and visit confirmation link
+  const confirmLink = htmlContent.match(/href="([^"]*confirm[^"]*)"/)?.[1];
+  expect(confirmLink).toBeTruthy();
+  await page.goto(confirmLink);
+  await expect(page.locator('text=Subscription confirmed')).toBeVisible();
+
+  // Verify welcome email arrives
+  await page.waitForTimeout(2000);
+  const welcomeEmail = await request.get(
+    'https://api.plop.email/v1/messages/latest',
+    {
+      params: { to: testEmail },
+      headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` },
+    }
+  );
+  const welcome = await welcomeEmail.json();
+  expect(welcome.subject).toContain('Welcome');
+
+  // Verify unsubscribe link exists
+  expect(welcome.htmlContent).toMatch(/unsubscribe/i);
+});`,
+    },
+    benefits: [
+      {
+        title: "Complete Flow Testing",
+        description: "Test signup → confirmation → welcome → unsubscribe.",
+      },
+      {
+        title: "Link Validation",
+        description: "Verify all links work and redirect to the correct pages.",
+      },
+      {
+        title: "Compliance Checking",
+        description: "Ensure unsubscribe links are present (CAN-SPAM, GDPR).",
+      },
+      {
+        title: "Clean Test Data",
+        description: "Unique test emails don't pollute your subscriber list.",
+      },
+    ],
+    relatedUseCases: ["transactional-emails", "onboarding-flows"],
+    relatedIntegrations: ["playwright", "cypress"],
+  },
+  {
+    slug: "invoice-emails",
+    title: "Invoice & Receipt Testing",
+    description: "Test order confirmations, invoices, and payment receipts",
+    metaDescription:
+      "Verify invoice emails, order confirmations, and payment receipts. Test that amounts, items, and links are correct before they reach customers.",
+    icon: "Receipt",
+    heroTitle: "Test Invoice & Receipt Emails",
+    heroDescription:
+      "Catch invoice bugs before customers do. Verify amounts, line items, and payment links are correct in your transactional emails.",
+    problem: {
+      title: "Invoice errors damage trust and cause refunds",
+      points: [
+        "Wrong amounts or calculations go unnoticed until complaints",
+        "Missing or broken payment links frustrate customers",
+        "Dynamic content like names and items may not render",
+        "Currency and locale formatting can break silently",
+      ],
+    },
+    solution: {
+      title: "Automated invoice validation",
+      points: [
+        "Assert on amounts, taxes, and totals programmatically",
+        "Verify payment and download links work correctly",
+        "Test with different order scenarios and edge cases",
+        "Validate currency formatting and localization",
+      ],
+    },
+    codeExample: {
+      language: "typescript",
+      title: "Testing Order Confirmation Email",
+      code: `import { test, expect } from 'vitest';
+
+test('order confirmation email has correct details', async () => {
+  const orderEmail = \`order+\${Date.now()}@in.plop.email\`;
+  const orderData = {
+    items: [
+      { name: 'Pro Plan', price: 29.00, quantity: 1 },
+      { name: 'Extra Seats', price: 10.00, quantity: 3 },
+    ],
+    tax: 5.90,
+    total: 64.90,
+    currency: 'USD',
+  };
+
+  // Trigger order and email
+  await api.createOrder({ email: orderEmail, ...orderData });
+
+  // Fetch receipt email
+  const response = await fetch(
+    \`https://api.plop.email/v1/messages/latest?to=\${orderEmail}\`,
+    { headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` } }
+  );
+  const email = await response.json();
+
+  // Verify subject
+  expect(email.subject).toContain('Order Confirmation');
+
+  // Verify line items
+  expect(email.htmlContent).toContain('Pro Plan');
+  expect(email.htmlContent).toContain('Extra Seats');
+
+  // Verify amounts (accounting for currency formatting)
+  expect(email.htmlContent).toMatch(/\\$64\\.90|64\\.90\\s*USD/);
+
+  // Verify receipt/invoice link exists
+  const receiptLink = email.htmlContent.match(/href="([^"]*receipt[^"]*)"/);
+  expect(receiptLink).toBeTruthy();
+
+  // Verify link works
+  const linkResponse = await fetch(receiptLink[1]);
+  expect(linkResponse.status).toBe(200);
+});`,
+    },
+    benefits: [
+      {
+        title: "Prevent Revenue Loss",
+        description: "Catch billing errors before they reach customers.",
+      },
+      {
+        title: "Content Verification",
+        description: "Assert on amounts, items, and calculations.",
+      },
+      {
+        title: "Link Testing",
+        description: "Verify invoice downloads and payment links work.",
+      },
+      {
+        title: "Edge Case Coverage",
+        description: "Test discounts, refunds, and international orders.",
+      },
+    ],
+    relatedUseCases: ["transactional-emails", "e2e-testing"],
+    relatedIntegrations: ["jest", "pytest"],
   },
 ];
 

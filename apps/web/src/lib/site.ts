@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "plop.email",
   title: "plop.email",
   description:
-    "Programmable inboxes for devs and QA. Use mailbox + tag addresses and pull the latest message from the Messages API for reliable E2E tests.",
+    "Email testing API for developers and QA teams. Send emails to programmable inboxes, fetch via REST API, and verify in your E2E tests. No mail server setup.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://plop.email",
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://app.plop.email",
   docsUrl: "https://docs.plop.email",

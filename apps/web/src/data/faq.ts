@@ -21,7 +21,7 @@ export const faqItems: FAQItem[] = [
   {
     question: "What's the difference between plop.email and Mailhog/Mailtrap?",
     answer:
-      "MailHog is a self-hosted SMTP server you run locally—great for development but requires infrastructure. Mailtrap offers testing and sending in one platform. plop.email is a cloud-based API specifically designed for test automation—no infrastructure to manage, works identically in local dev and CI/CD, and is open-source.",
+      "MailHog is a self-hosted SMTP server you run locally—great for development but requires infrastructure. Note: MailHog is no longer maintained (last updated 2020); consider Mailpit as an alternative. Mailtrap offers testing and sending in one platform. plop.email is a cloud-based API specifically designed for test automation—no infrastructure to manage, works identically in local dev and CI/CD, and is open-source.",
     category: "general",
   },
   {

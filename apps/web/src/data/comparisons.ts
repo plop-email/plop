@@ -197,7 +197,7 @@ export const comparisons: Comparison[] = [
       },
       competitor: {
         free: "14-day trial",
-        paid: "From $99/mo",
+        paid: "From $9/mo",
       },
     },
   },
@@ -311,7 +311,7 @@ export const comparisons: Comparison[] = [
           {
             feature: "Starting paid price",
             plop: "$5/mo",
-            competitor: "$15/mo",
+            competitor: "$10/mo",
             winner: "plop",
           },
         ],
@@ -352,8 +352,8 @@ export const comparisons: Comparison[] = [
         paid: "From $5/mo",
       },
       competitor: {
-        free: "100 emails/month",
-        paid: "From $15/mo",
+        free: "Free tier available",
+        paid: "From $10/mo",
       },
     },
   },
@@ -366,11 +366,11 @@ export const comparisons: Comparison[] = [
       "Compare plop.email and MailHog for local email testing. See why teams are moving from self-hosted MailHog to cloud-based plop.",
     heroTitle: "plop.email vs MailHog",
     heroDescription:
-      "MailHog is a local SMTP server for development. plop.email is a cloud API. Here's when to use each.",
+      "MailHog is a local SMTP server for development. Note: MailHog is no longer maintained—consider Mailpit as an alternative. plop.email is a cloud API for modern email testing.",
     verdict: {
       title: "The Verdict",
       description:
-        "MailHog is great for local development but requires infrastructure management. plop.email works everywhere (local, CI, staging) with zero setup.",
+        "MailHog is no longer actively maintained and hasn't received updates since 2020. For self-hosted local testing, consider Mailpit (a maintained fork). plop.email works everywhere (local, CI, staging) with zero setup and ongoing development.",
       choosePlop: [
         "You need email testing in CI/CD",
         "You want zero infrastructure management",
@@ -378,7 +378,7 @@ export const comparisons: Comparison[] = [
         "You need reliable cloud-based testing",
       ],
       chooseCompetitor: [
-        "You only test locally",
+        "You only test locally (consider Mailpit instead)",
         "You want 100% free, self-hosted",
         "You need SMTP protocol (not REST)",
         "You prefer complete data privacy",
@@ -447,6 +447,12 @@ export const comparisons: Comparison[] = [
             competitor: "Self-managed",
             winner: "plop",
           },
+          {
+            feature: "Active development",
+            plop: true,
+            competitor: "Unmaintained since 2020",
+            winner: "plop",
+          },
         ],
       },
       {
@@ -512,6 +518,479 @@ export const comparisons: Comparison[] = [
       competitor: {
         free: "100% free",
         paid: "N/A (open source)",
+      },
+    },
+  },
+  {
+    slug: "plop-vs-mailslurp",
+    competitor: "MailSlurp",
+    competitorUrl: "https://mailslurp.com",
+    title: "plop.email vs MailSlurp",
+    metaDescription:
+      "Compare plop.email and MailSlurp for email testing. See how they differ in features, pricing, and developer experience.",
+    heroTitle: "plop.email vs MailSlurp",
+    heroDescription:
+      "Both tools provide programmable inboxes for testing. Here's how they compare for different use cases.",
+    verdict: {
+      title: "The Verdict",
+      description:
+        "MailSlurp is a feature-rich platform with many language SDKs and advanced email features. plop.email is simpler, open-source, and focused on core testing workflows with transparent pricing.",
+      choosePlop: [
+        "You want open-source with self-hosting option",
+        "You need simple, transparent pricing",
+        "You prefer a focused, lightweight tool",
+        "You value API simplicity over SDK variety",
+      ],
+      chooseCompetitor: [
+        "You need SDKs for many languages",
+        "You want advanced email features (attachments, parsing)",
+        "You need phone/SMS testing",
+        "You require enterprise-grade SLAs",
+      ],
+    },
+    features: [
+      {
+        category: "Core Features",
+        items: [
+          {
+            feature: "Programmable inboxes",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+          {
+            feature: "REST API",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+          {
+            feature: "Plus-addressing (tags)",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+          {
+            feature: "Attachment handling",
+            plop: "Basic",
+            competitor: "Advanced",
+            winner: "competitor",
+          },
+          {
+            feature: "Phone/SMS testing",
+            plop: false,
+            competitor: true,
+            winner: "competitor",
+          },
+        ],
+      },
+      {
+        category: "Developer Experience",
+        items: [
+          {
+            feature: "Open source",
+            plop: true,
+            competitor: false,
+            winner: "plop",
+          },
+          {
+            feature: "Self-hosting option",
+            plop: true,
+            competitor: false,
+            winner: "plop",
+          },
+          {
+            feature: "Official SDKs",
+            plop: "REST only",
+            competitor: "15+ languages",
+            winner: "competitor",
+          },
+          {
+            feature: "API simplicity",
+            plop: "3 endpoints",
+            competitor: "Many endpoints",
+            winner: "plop",
+          },
+        ],
+      },
+      {
+        category: "Pricing",
+        items: [
+          {
+            feature: "Free tier",
+            plop: "14-day trial",
+            competitor: "Limited free tier",
+            winner: "tie",
+          },
+          {
+            feature: "Transparent pricing",
+            plop: true,
+            competitor: "Complex tiers",
+            winner: "plop",
+          },
+          {
+            feature: "Starting price",
+            plop: "$5/mo",
+            competitor: "$19/mo",
+            winner: "plop",
+          },
+        ],
+      },
+    ],
+    plopAdvantages: [
+      {
+        title: "Open Source",
+        description:
+          "plop.email is AGPL-3.0 licensed. Audit the code, self-host, or contribute.",
+      },
+      {
+        title: "Simple Pricing",
+        description:
+          "Transparent plans starting at $5/mo. No complex tier calculations.",
+      },
+      {
+        title: "API Simplicity",
+        description:
+          "Just 3 endpoints to learn. No SDK required, works with any HTTP client.",
+      },
+    ],
+    competitorAdvantages: [
+      {
+        title: "SDK Ecosystem",
+        description:
+          "Official SDKs for Java, Python, PHP, Ruby, Go, C#, and more.",
+      },
+      {
+        title: "Advanced Email Parsing",
+        description:
+          "Sophisticated attachment handling and HTML/text parsing features.",
+      },
+      {
+        title: "Phone Testing",
+        description: "Test SMS and voice alongside email in the same workflow.",
+      },
+    ],
+    pricing: {
+      plop: {
+        free: "14-day free trial",
+        paid: "From $5/mo",
+      },
+      competitor: {
+        free: "Free for personal use",
+        paid: "From $19/mo",
+      },
+    },
+  },
+  {
+    slug: "plop-vs-ethereal",
+    competitor: "Ethereal",
+    competitorUrl: "https://ethereal.email",
+    title: "plop.email vs Ethereal",
+    metaDescription:
+      "Compare plop.email and Ethereal for email testing. See when to use a free catch-all service vs a programmable inbox API.",
+    heroTitle: "plop.email vs Ethereal",
+    heroDescription:
+      "Ethereal is a free fake SMTP service. plop.email is a programmable inbox API. Here's when to use each.",
+    verdict: {
+      title: "The Verdict",
+      description:
+        "Ethereal is perfect for quick manual testing during development. plop.email is built for automated testing in CI/CD pipelines where you need programmatic access to emails.",
+      choosePlop: [
+        "You need automated email testing in CI/CD",
+        "You want programmatic API access to emails",
+        "You need test isolation with unique addresses",
+        "You want reliable, production-grade infrastructure",
+      ],
+      chooseCompetitor: [
+        "You only need manual testing during development",
+        "You want completely free service",
+        "You prefer SMTP-based sending",
+        "You're just prototyping and don't need automation",
+      ],
+    },
+    features: [
+      {
+        category: "Core Features",
+        items: [
+          {
+            feature: "REST API",
+            plop: true,
+            competitor: "Limited",
+            winner: "plop",
+          },
+          {
+            feature: "SMTP server",
+            plop: false,
+            competitor: true,
+            winner: "competitor",
+          },
+          {
+            feature: "Programmable inboxes",
+            plop: true,
+            competitor: false,
+            winner: "plop",
+          },
+          {
+            feature: "Works in CI/CD",
+            plop: "Native",
+            competitor: "Manual only",
+            winner: "plop",
+          },
+          {
+            feature: "Unique addresses per test",
+            plop: true,
+            competitor: false,
+            winner: "plop",
+          },
+        ],
+      },
+      {
+        category: "Developer Experience",
+        items: [
+          {
+            feature: "Open source",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+          {
+            feature: "Self-hosting",
+            plop: true,
+            competitor: false,
+            winner: "plop",
+          },
+          {
+            feature: "Web UI",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+          {
+            feature: "Test automation support",
+            plop: "Built-in",
+            competitor: "Manual",
+            winner: "plop",
+          },
+        ],
+      },
+      {
+        category: "Pricing",
+        items: [
+          {
+            feature: "Free option",
+            plop: "14-day trial",
+            competitor: "100% free",
+            winner: "competitor",
+          },
+          {
+            feature: "Production reliability",
+            plop: "SLA backed",
+            competitor: "Best effort",
+            winner: "plop",
+          },
+          {
+            feature: "Support",
+            plop: "Email & docs",
+            competitor: "Community",
+            winner: "plop",
+          },
+        ],
+      },
+    ],
+    plopAdvantages: [
+      {
+        title: "Automation First",
+        description:
+          "Built for CI/CD pipelines with deterministic API-based testing.",
+      },
+      {
+        title: "Test Isolation",
+        description: "Unique addresses per test eliminate race conditions.",
+      },
+      {
+        title: "Production Ready",
+        description: "Reliable infrastructure with SLA-backed uptime.",
+      },
+    ],
+    competitorAdvantages: [
+      {
+        title: "100% Free",
+        description: "No cost, no account required for basic testing.",
+      },
+      {
+        title: "SMTP Protocol",
+        description:
+          "Works with apps that need to send via SMTP, not just API.",
+      },
+      {
+        title: "Quick Setup",
+        description: "Generate test account instantly, no signup needed.",
+      },
+    ],
+    pricing: {
+      plop: {
+        free: "14-day free trial",
+        paid: "From $5/mo",
+      },
+      competitor: {
+        free: "100% free",
+        paid: "N/A",
+      },
+    },
+  },
+  {
+    slug: "plop-vs-testmail",
+    competitor: "Testmail.app",
+    competitorUrl: "https://testmail.app",
+    title: "plop.email vs Testmail.app",
+    metaDescription:
+      "Compare plop.email and Testmail.app for automated email testing. See features, pricing, and which is right for your team.",
+    heroTitle: "plop.email vs Testmail.app",
+    heroDescription:
+      "Both tools are built for automated email testing. Here's how they compare.",
+    verdict: {
+      title: "The Verdict",
+      description:
+        "Testmail.app is a solid email testing service with good automation features. plop.email offers open-source transparency, simpler pricing, and self-hosting capability.",
+      choosePlop: [
+        "You want open-source with self-hosting",
+        "You need simpler, lower-cost pricing",
+        "You prefer minimal API surface",
+        "You want to audit the code yourself",
+      ],
+      chooseCompetitor: [
+        "You want a mature, established service",
+        "You need advanced filtering options",
+        "You prefer namespace-based organization",
+        "You want more email history retention",
+      ],
+    },
+    features: [
+      {
+        category: "Core Features",
+        items: [
+          {
+            feature: "Programmable inboxes",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+          {
+            feature: "REST API",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+          {
+            feature: "Plus-addressing",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+          {
+            feature: "Namespace organization",
+            plop: "Tags",
+            competitor: "Namespaces",
+            winner: "tie",
+          },
+          {
+            feature: "Email history",
+            plop: "7 days",
+            competitor: "30 days",
+            winner: "competitor",
+          },
+        ],
+      },
+      {
+        category: "Developer Experience",
+        items: [
+          {
+            feature: "Open source",
+            plop: true,
+            competitor: false,
+            winner: "plop",
+          },
+          {
+            feature: "Self-hosting",
+            plop: true,
+            competitor: false,
+            winner: "plop",
+          },
+          {
+            feature: "API documentation",
+            plop: "OpenAPI",
+            competitor: "REST docs",
+            winner: "tie",
+          },
+          {
+            feature: "CI/CD examples",
+            plop: true,
+            competitor: true,
+            winner: "tie",
+          },
+        ],
+      },
+      {
+        category: "Pricing",
+        items: [
+          {
+            feature: "Free tier",
+            plop: "14-day trial",
+            competitor: "Free tier",
+            winner: "tie",
+          },
+          {
+            feature: "Starting price",
+            plop: "$5/mo",
+            competitor: "$9/mo",
+            winner: "plop",
+          },
+          {
+            feature: "Pricing transparency",
+            plop: "Fully public",
+            competitor: "Public",
+            winner: "tie",
+          },
+        ],
+      },
+    ],
+    plopAdvantages: [
+      {
+        title: "Open Source",
+        description:
+          "AGPL-3.0 licensed. Self-host or contribute to the codebase.",
+      },
+      {
+        title: "Lower Cost",
+        description: "Plans start at $5/mo vs $9/mo for similar features.",
+      },
+      {
+        title: "Simpler API",
+        description: "Minimal endpoints to learn, works with any HTTP client.",
+      },
+    ],
+    competitorAdvantages: [
+      {
+        title: "Email Retention",
+        description: "30-day email history vs 7 days on plop.",
+      },
+      {
+        title: "Namespace System",
+        description: "Organize tests by project with namespace isolation.",
+      },
+      {
+        title: "Established Service",
+        description: "Longer track record in the email testing space.",
+      },
+    ],
+    pricing: {
+      plop: {
+        free: "14-day free trial",
+        paid: "From $5/mo",
+      },
+      competitor: {
+        free: "Free forever plan",
+        paid: "From $9/mo",
       },
     },
   },

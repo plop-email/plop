@@ -2,6 +2,9 @@
   "title": "Documentation",
   "pages": [
     "index",
+    "---Getting Started---",
+    "quick-start",
+    "testing-patterns",
     "---Overview---",
     "system-overview",
     "---Inbox---",

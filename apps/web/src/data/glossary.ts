@@ -296,7 +296,7 @@ For most applications, APIs provide the right balance of simplicity and function
 \`\`\`
 POST /your-app/signup { email: "test+123@in.plop.email" }
 GET  /plop/messages/latest?to=test+123@in.plop.email
-→ Returns { subject, html, text, from, to, ... }
+→ Returns { subject, htmlContent, textContent, from, to, ... }
 \`\`\`
 
 This is simpler and more reliable than SMTP-based testing approaches.`,
@@ -325,7 +325,7 @@ const message = await fetch(
 );
 
 // Response includes full email data
-// { id, from, to, subject, html, text, receivedAt, ... }`,
+// { id, from, to, subject, htmlContent, textContent, receivedAt, ... }`,
     },
     relatedTerms: ["smtp-testing", "email-deliverability", "mailbox-routing"],
     relatedUseCases: ["transactional-emails", "e2e-testing"],
@@ -427,10 +427,10 @@ test.describe('Email Testing Examples', () => {
 
     // 4. Assert email content
     expect(email.subject).toContain('Verify');
-    expect(email.html).toContain('Click here to verify');
+    expect(email.htmlContent).toContain('Click here to verify');
 
     // 5. Extract and visit verification link
-    const verifyLink = extractLink(email.html, 'verify');
+    const verifyLink = extractLink(email.htmlContent, 'verify');
     await page.goto(verifyLink);
 
     // 6. Confirm verification succeeded
@@ -440,6 +440,325 @@ test.describe('Email Testing Examples', () => {
     },
     relatedTerms: ["smtp-testing", "email-api", "mailbox-routing"],
     relatedUseCases: ["e2e-testing", "transactional-emails", "ci-cd-pipelines"],
+  },
+  {
+    slug: "dkim",
+    term: "DKIM",
+    shortDefinition:
+      "DomainKeys Identified Mail - a method for email authentication that uses cryptographic signatures to verify sender identity.",
+    metaDescription:
+      "Learn what DKIM is, how it works, and why it matters for email deliverability and authentication in your applications.",
+    fullDefinition:
+      "DKIM (DomainKeys Identified Mail) is an email authentication method that adds a digital signature to outgoing emails. This signature is verified by receiving mail servers using a public key published in the sender's DNS records. DKIM helps prevent email spoofing and improves deliverability by proving emails truly came from the claimed domain.",
+    sections: [
+      {
+        title: "How DKIM Works",
+        content: `DKIM works through a cryptographic signing process:
+
+1. **Signing**: The sending mail server adds a DKIM-Signature header containing a cryptographic signature of certain email headers and body
+2. **Publishing**: The sending domain publishes a public key in their DNS records
+3. **Verification**: Receiving servers fetch the public key and verify the signature
+4. **Result**: If valid, the email is authenticated as genuinely from that domain
+
+The signature covers the email content, so any tampering in transit will cause verification to fail.`,
+      },
+      {
+        title: "DKIM in Development",
+        content: `When testing emails, DKIM affects your workflow in several ways:
+
+**Production Emails**
+- Your email service (SendGrid, Postmark, etc.) handles DKIM signing
+- You need to add DKIM DNS records for your sending domain
+- Improperly configured DKIM can cause emails to go to spam
+
+**Test Emails**
+- Test services like plop.email handle DKIM for the receiving side
+- When testing your app's emails, you're testing that emails are sent, not DKIM configuration
+- DKIM testing is typically done during email infrastructure setup, not in E2E tests`,
+      },
+      {
+        title: "Testing DKIM Configuration",
+        content: `While plop.email focuses on functional email testing, verifying DKIM setup is part of email infrastructure:
+
+- Use tools like mail-tester.com to check DKIM signing
+- Verify your DNS records are correctly published
+- Test with real inboxes (Gmail, Outlook) to confirm deliverability
+- Monitor DMARC reports for DKIM failures
+
+For E2E testing, focus on the email content and functionality, leaving DKIM verification to infrastructure tests.`,
+      },
+    ],
+    relatedTerms: ["email-deliverability", "smtp-testing"],
+    relatedUseCases: ["transactional-emails"],
+  },
+  {
+    slug: "spf",
+    term: "SPF",
+    shortDefinition:
+      "Sender Policy Framework - an email authentication standard that specifies which servers can send email for a domain.",
+    metaDescription:
+      "Learn what SPF is, how to set it up, and why it's essential for email deliverability and preventing spoofing.",
+    fullDefinition:
+      "SPF (Sender Policy Framework) is an email authentication protocol that allows domain owners to specify which mail servers are authorized to send email on behalf of their domain. It works through DNS TXT records that list authorized IP addresses and servers, helping receiving servers detect forged sender addresses.",
+    sections: [
+      {
+        title: "How SPF Works",
+        content: `SPF uses DNS records to define authorized senders:
+
+1. **Record Publishing**: Domain owner adds a TXT record listing authorized mail servers
+2. **Email Sending**: Mail is sent from a server
+3. **SPF Check**: Receiving server looks up the SPF record for the sender's domain
+4. **Verification**: Server checks if the sending IP is authorized
+5. **Result**: Pass, fail, softfail, or neutral based on the policy
+
+Example SPF record:
+\`\`\`
+v=spf1 include:_spf.google.com include:sendgrid.net ~all
+\`\`\`
+
+This allows Google and SendGrid servers to send email for the domain.`,
+      },
+      {
+        title: "SPF for Developers",
+        content: `As a developer, SPF affects you when:
+
+**Setting Up Email Sending**
+- Add SPF records for your email service provider
+- Include all services that send email (app, marketing, transactional)
+- Test that emails pass SPF checks
+
+**Multiple Senders**
+- Combine all senders in one SPF record
+- Watch the 10 DNS lookup limit
+- Use includes for third-party services
+
+SPF alone isn't enough—combine with DKIM and DMARC for full protection.`,
+      },
+    ],
+    relatedTerms: ["dkim", "email-deliverability"],
+    relatedUseCases: ["transactional-emails"],
+  },
+  {
+    slug: "bounce-handling",
+    term: "Email Bounce Handling",
+    shortDefinition:
+      "The process of managing undeliverable emails, including hard bounces (permanent) and soft bounces (temporary).",
+    metaDescription:
+      "Learn about email bounce handling: types of bounces, how to handle them, and best practices for maintaining email list health.",
+    fullDefinition:
+      "Email bounce handling is the process of managing emails that cannot be delivered to recipients. Bounces are categorized as hard bounces (permanent failures like invalid addresses) or soft bounces (temporary issues like full mailboxes). Proper bounce handling is crucial for maintaining sender reputation and email deliverability.",
+    sections: [
+      {
+        title: "Types of Bounces",
+        content: `**Hard Bounces** (Permanent)
+- Invalid email address
+- Domain doesn't exist
+- Recipient server permanently rejects
+- Action: Remove immediately from list
+
+**Soft Bounces** (Temporary)
+- Mailbox full
+- Server temporarily unavailable
+- Message too large
+- Action: Retry, then remove after multiple failures
+
+**Block Bounces**
+- Spam filter rejection
+- IP/domain blacklisted
+- Content-based filtering
+- Action: Investigate and fix the underlying issue`,
+      },
+      {
+        title: "Handling Bounces in Your Application",
+        content: `Most email services provide bounce handling via webhooks:
+
+\`\`\`typescript
+// Example bounce webhook handler
+app.post('/webhooks/email-bounces', async (req, res) => {
+  const { email, type, reason, timestamp } = req.body;
+
+  if (type === 'hard_bounce') {
+    // Immediately mark as invalid
+    await db.user.update({
+      where: { email },
+      data: { emailStatus: 'invalid', emailInvalidReason: reason }
+    });
+  } else if (type === 'soft_bounce') {
+    // Track soft bounces, disable after threshold
+    await db.emailBounce.create({
+      data: { email, reason, timestamp }
+    });
+  }
+
+  res.status(200).send('OK');
+});
+\`\`\`
+
+Test your bounce handling by sending to known invalid addresses in staging.`,
+      },
+      {
+        title: "Testing Bounce Handling",
+        content: `Testing bounce scenarios requires different approaches:
+
+**Webhook Testing**
+- Use your email service's test endpoints
+- Simulate bounce webhooks in integration tests
+- Verify user records are updated correctly
+
+**End-to-End Testing**
+- Some services provide special addresses that always bounce
+- Test that bounced users are handled in your UI
+- Verify re-engagement flows for soft bounces
+
+Note: plop.email is for testing successful delivery. For bounce testing, use your email service's testing features.`,
+      },
+    ],
+    relatedTerms: ["email-deliverability", "smtp-testing"],
+    relatedUseCases: ["transactional-emails"],
+  },
+  {
+    slug: "email-headers",
+    term: "Email Headers",
+    shortDefinition:
+      "Metadata fields at the top of an email that contain routing information, sender/recipient details, and processing instructions.",
+    metaDescription:
+      "Learn about email headers: what they contain, how to read them, and how to use them in email testing and debugging.",
+    fullDefinition:
+      "Email headers are lines of metadata at the beginning of an email message containing information about the sender, recipient, routing path, timestamps, and various processing instructions. Headers are crucial for email delivery, authentication, and debugging delivery issues.",
+    sections: [
+      {
+        title: "Common Email Headers",
+        content: `**Essential Headers**
+- \`From\`: Sender's email address
+- \`To\`: Recipient's email address
+- \`Subject\`: Email subject line
+- \`Date\`: When the email was sent
+- \`Message-ID\`: Unique identifier for the email
+
+**Routing Headers**
+- \`Received\`: Added by each server handling the email
+- \`Return-Path\`: Where bounces should be sent
+
+**Authentication Headers**
+- \`DKIM-Signature\`: Digital signature for authentication
+- \`Authentication-Results\`: SPF/DKIM/DMARC check results
+
+**Custom Headers**
+- \`X-*\`: Custom application headers
+- \`List-Unsubscribe\`: Unsubscribe URL for mailing lists`,
+      },
+      {
+        title: "Testing Email Headers",
+        content: `When testing emails, headers help verify correct behavior:
+
+\`\`\`typescript
+test('email has correct headers', async () => {
+  const testEmail = \`headers+\${Date.now()}@in.plop.email\`;
+
+  await sendEmail({
+    to: testEmail,
+    subject: 'Test Email',
+    headers: {
+      'X-Campaign-ID': 'campaign-123',
+      'List-Unsubscribe': '<mailto:unsubscribe@example.com>',
+    },
+  });
+
+  const email = await plop.getLatest(testEmail);
+
+  // Verify custom headers are present
+  expect(email.headers['x-campaign-id']).toBe('campaign-123');
+  expect(email.headers['list-unsubscribe']).toBeDefined();
+
+  // Verify standard headers
+  expect(email.headers['from']).toContain('@example.com');
+  expect(email.headers['message-id']).toBeDefined();
+});
+\`\`\``,
+      },
+    ],
+    example: {
+      title: "Parsing Email Headers",
+      language: "typescript",
+      code: `// Common header patterns to check in tests
+
+// Verify unsubscribe header (required for marketing emails)
+expect(email.headers['list-unsubscribe']).toMatch(
+  /<mailto:|<https?:\\/\\//
+);
+
+// Check custom tracking headers
+expect(email.headers['x-mailer']).toBe('MyApp/1.0');
+
+// Verify reply-to is set correctly
+expect(email.headers['reply-to']).toBe('support@example.com');
+
+// Check content type for HTML emails
+expect(email.headers['content-type']).toContain('multipart/alternative');`,
+    },
+    relatedTerms: ["smtp-testing", "email-api"],
+    relatedUseCases: ["transactional-emails", "e2e-testing"],
+  },
+  {
+    slug: "mime-types",
+    term: "MIME Types in Email",
+    shortDefinition:
+      "Multipurpose Internet Mail Extensions (MIME) define content types in emails, enabling HTML, attachments, and multiple content formats.",
+    metaDescription:
+      "Learn about MIME types in email: how they enable HTML, attachments, and multipart messages, plus testing considerations.",
+    fullDefinition:
+      "MIME (Multipurpose Internet Mail Extensions) extends email beyond plain text by defining content types and encoding schemes. MIME enables HTML emails, file attachments, and multipart messages that contain both text and HTML versions. Understanding MIME is essential for building and testing rich email experiences.",
+    sections: [
+      {
+        title: "Common Email MIME Types",
+        content: `**Content Types**
+- \`text/plain\`: Plain text email
+- \`text/html\`: HTML formatted email
+- \`multipart/alternative\`: Contains both text and HTML versions
+- \`multipart/mixed\`: Email with attachments
+
+**Attachment Types**
+- \`application/pdf\`: PDF documents
+- \`image/png\`, \`image/jpeg\`: Images
+- \`application/octet-stream\`: Binary files
+
+**Email Structure**
+\`\`\`
+multipart/mixed
+├── multipart/alternative
+│   ├── text/plain (fallback)
+│   └── text/html (rich content)
+└── application/pdf (attachment)
+\`\`\``,
+      },
+      {
+        title: "Testing MIME Content",
+        content: `When testing emails, verify both text and HTML versions:
+
+\`\`\`typescript
+test('email has both plain text and HTML versions', async () => {
+  const email = await plop.getLatest(testEmail);
+
+  // Verify plain text version exists
+  expect(email.textContent).toBeDefined();
+  expect(email.textContent).toContain('Welcome');
+
+  // Verify HTML version exists
+  expect(email.htmlContent).toBeDefined();
+  expect(email.htmlContent).toContain('<h1>Welcome</h1>');
+
+  // Verify they contain equivalent content
+  const textLinks = email.textContent.match(/https?:\\/\\/[^\\s]+/g);
+  const htmlLinks = email.htmlContent.match(/href="([^"]+)"/g);
+  expect(textLinks?.length).toBeGreaterThan(0);
+});
+\`\`\`
+
+Always provide a text fallback—some email clients don't render HTML.`,
+      },
+    ],
+    relatedTerms: ["email-headers", "email-api"],
+    relatedUseCases: ["transactional-emails"],
   },
 ];
 

@@ -7,7 +7,26 @@ This site collects product documentation, internal playbooks, and platform refer
 
 ---
 
-## Documentation
+## Getting Started
+
+<Cards>
+<Card title="Quick Start" href="/quick-start">
+Get started testing emails in 5 minutes with code examples for Playwright, Cypress, Jest, and pytest.
+</Card>
+<Card title="Testing Patterns" href="/testing-patterns">
+Common patterns for testing magic links, OTPs, password resets, and transactional emails.
+</Card>
+<Card title="Messages API" href="/messages-api">
+Full API reference for listing and fetching inbox messages.
+</Card>
+<Card title="E2E: pull latest email" href="/e2e-email-polling">
+Advanced polling patterns with Playwright and retry logic.
+</Card>
+</Cards>
+
+---
+
+## Platform Architecture
 
 <Cards>
 <Card title="System overview" href="/system-overview">
@@ -16,11 +35,11 @@ Understand how the apps and packages fit together.
 <Card title="Inbox pipeline" href="/inbox-pipeline">
 Follow the inbound email flow from Cloudflare to the UI.
 </Card>
-<Card title="E2E: pull latest email" href="/e2e-email-polling">
-Grab OTPs and links by polling the Messages API.
+<Card title="Domains & Mailboxes" href="/inbox-domains-mailboxes">
+Root vs custom domains, tags, and mailbox resolution.
 </Card>
-<Card title="App domain addition" href="/app-domain-addition">
-Restore and maintain the custom domain flow inside the main app settings.
+<Card title="Reserved Names" href="/reserved-mailbox-names">
+Security protections against phishing and impersonation.
 </Card>
 </Cards>
 

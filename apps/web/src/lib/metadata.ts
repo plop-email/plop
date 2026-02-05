@@ -20,22 +20,25 @@ export function generateMetadata({
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const fullUrl = `${baseUrl}${normalizedPath}`;
 
-  const defaultTitle = "plop.email - Test emails. Extract data. Ship faster.";
+  const defaultTitle = "plop.email - Email Testing API for E2E Tests & CI/CD";
   const defaultDescription = siteConfig.description;
 
   const defaultKeywords = [
-    "inbox automation",
+    "email testing tool",
+    "email testing API",
     "email testing",
+    "test emails in CI/CD",
+    "playwright email testing",
+    "cypress email verification",
+    "mailtrap alternative",
+    "mailosaur alternative",
+    "E2E email testing",
+    "automated email testing",
     "email API",
     "QA automation",
-    "mailbox routing",
-    "transactional email",
-    "email webhooks",
-    "developer tools",
-    "E2E testing",
-    "email parsing",
-    "email storage",
-    "mailbox tags",
+    "transactional email testing",
+    "magic link testing",
+    "OTP email testing",
   ];
 
   return {
@@ -95,6 +98,19 @@ export function generateMetadata({
     icons: {
       icon: "/favicon.ico",
       apple: "/logo.png",
+    },
+    other: {
+      "application/rss+xml": `${baseUrl}/feed.xml`,
+    },
+  };
+}
+
+export function generateRssMetadata() {
+  return {
+    alternates: {
+      types: {
+        "application/rss+xml": `${siteConfig.url}/feed.xml`,
+      },
     },
   };
 }

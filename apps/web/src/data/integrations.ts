@@ -129,7 +129,7 @@ test('magic link authentication', async ({ page, request, context }) => {
   const email = await emailResponse.json();
 
   // Extract magic link from email HTML
-  const magicLinkMatch = email.html.match(/href="([^"]*magic[^"]*)"/);
+  const magicLinkMatch = email.htmlContent.match(/href="([^"]*magic[^"]*)"/);
   expect(magicLinkMatch).toBeTruthy();
 
   // Navigate to magic link
@@ -341,8 +341,8 @@ describe('Email Service', () => {
     const email = await plopClient.getLatest(testEmail);
 
     expect(email.subject).toBe('Welcome to Our App!');
-    expect(email.html).toContain('Test User');
-    expect(email.html).toContain('Get Started');
+    expect(email.htmlContent).toContain('Test User');
+    expect(email.htmlContent).toContain('Get Started');
   });
 });`,
     },
@@ -478,8 +478,8 @@ def test_welcome_email(plop_client):
     email = plop_client.get_latest(test_email)
 
     assert "Welcome" in email["subject"]
-    assert "Test User" in email["html"]
-    assert "Get Started" in email["html"]`,
+    assert "Test User" in email["htmlContent"]
+    assert "Get Started" in email["htmlContent"]`,
     },
     advancedExample: {
       title: "Parametrized Email Tests",
@@ -512,7 +512,7 @@ def test_email_templates(
 
     assert expected_subject in email["subject"]
     for content in expected_content:
-        assert content in email["html"], f"Missing: {content}"`,
+        assert content in email["htmlContent"], f"Missing: {content}"`,
     },
     tips: [
       "Use pytest fixtures for DRY test setup",
@@ -629,6 +629,540 @@ if (response.error && pm.environment.get("retryCount") < 5) {
     relatedIntegrations: ["jest", "cypress"],
     relatedUseCases: ["transactional-emails", "ci-cd-pipelines"],
     docsUrl: "https://learning.postman.com",
+  },
+  {
+    slug: "selenium",
+    name: "Selenium",
+    description: "E2E testing with Selenium WebDriver",
+    metaDescription:
+      "Integrate plop.email with Selenium for email verification in browser automation tests. Test email flows with Java, Python, or JavaScript.",
+    icon: "Globe",
+    category: "testing",
+    heroTitle: "Selenium + plop.email",
+    heroDescription:
+      "Add email verification to your Selenium tests. Works with Java, Python, C#, and all Selenium language bindings.",
+    features: [
+      {
+        title: "Language Agnostic",
+        description:
+          "Use with any Selenium binding—Java, Python, C#, Ruby, JavaScript.",
+      },
+      {
+        title: "REST API Integration",
+        description:
+          "Fetch emails using standard HTTP libraries in your test code.",
+      },
+      {
+        title: "Grid Compatible",
+        description:
+          "Works with Selenium Grid for parallel and distributed testing.",
+      },
+      {
+        title: "Cross-Browser Testing",
+        description: "Verify email flows across Chrome, Firefox, Safari, Edge.",
+      },
+    ],
+    installation: {
+      title: "Setup",
+      code: `# Python example
+pip install selenium requests
+
+# Java example (add to pom.xml)
+<dependency>
+  <groupId>org.seleniumhq.selenium</groupId>
+  <artifactId>selenium-java</artifactId>
+</dependency>
+
+# Set environment variable
+export PLOP_API_KEY=your_api_key`,
+    },
+    quickStart: {
+      title: "Python Selenium Example",
+      description: "Test email flows with Selenium and Python.",
+      code: `from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import requests
+import time
+import os
+
+def test_signup_email():
+    driver = webdriver.Chrome()
+    test_email = f"selenium+{int(time.time())}@in.plop.email"
+
+    try:
+        # Complete signup flow
+        driver.get("https://yourapp.com/signup")
+        driver.find_element(By.NAME, "email").send_keys(test_email)
+        driver.find_element(By.NAME, "password").send_keys("SecurePass123!")
+        driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+
+        # Wait for confirmation page
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "success-message"))
+        )
+
+        # Fetch email via plop API
+        time.sleep(2)  # Allow email delivery
+        response = requests.get(
+            "https://api.plop.email/v1/messages/latest",
+            params={"to": test_email},
+            headers={"Authorization": f"Bearer {os.environ['PLOP_API_KEY']}"}
+        )
+        email = response.json()
+
+        # Verify email content
+        assert "Welcome" in email["subject"]
+        assert "Get Started" in email["htmlContent"]
+
+    finally:
+        driver.quit()`,
+    },
+    advancedExample: {
+      title: "Java Selenium Example",
+      description: "Email testing with Selenium and Java.",
+      code: `import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import java.net.http.*;
+import java.net.URI;
+
+public class EmailTest {
+    public void testPasswordReset() throws Exception {
+        WebDriver driver = new ChromeDriver();
+        String testEmail = "selenium+" + System.currentTimeMillis() + "@in.plop.email";
+
+        try {
+            // Request password reset
+            driver.get("https://yourapp.com/forgot-password");
+            driver.findElement(By.name("email")).sendKeys(testEmail);
+            driver.findElement(By.cssSelector("button[type='submit']")).click();
+
+            Thread.sleep(3000); // Wait for email
+
+            // Fetch email via API
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.plop.email/v1/messages/latest?to=" + testEmail))
+                .header("Authorization", "Bearer " + System.getenv("PLOP_API_KEY"))
+                .build();
+
+            HttpResponse<String> response = client.send(request,
+                HttpResponse.BodyHandlers.ofString());
+
+            // Parse and verify
+            assert response.body().contains("Reset");
+
+        } finally {
+            driver.quit();
+        }
+    }
+}`,
+    },
+    tips: [
+      "Use explicit waits for email delivery instead of Thread.sleep()",
+      "Generate unique emails using timestamps or UUIDs",
+      "Store PLOP_API_KEY in CI secrets or environment variables",
+      "Consider using a Page Object pattern for email verification methods",
+    ],
+    relatedIntegrations: ["playwright", "cypress"],
+    relatedUseCases: ["e2e-testing", "transactional-emails"],
+    docsUrl: "https://www.selenium.dev/documentation/",
+  },
+  {
+    slug: "puppeteer",
+    name: "Puppeteer",
+    description: "Browser automation with Puppeteer",
+    metaDescription:
+      "Integrate plop.email with Puppeteer for email testing in Node.js browser automation. Test email flows with headless Chrome.",
+    icon: "Wand",
+    category: "testing",
+    heroTitle: "Puppeteer + plop.email",
+    heroDescription:
+      "Add email verification to your Puppeteer browser automation tests. Perfect for Node.js testing with headless Chrome.",
+    features: [
+      {
+        title: "Native Node.js",
+        description:
+          "First-class JavaScript/TypeScript support with async/await.",
+      },
+      {
+        title: "Headless Chrome",
+        description: "Fast, efficient testing with Chrome's DevTools Protocol.",
+      },
+      {
+        title: "Screenshot & PDF",
+        description: "Capture visual evidence alongside email verification.",
+      },
+      {
+        title: "Network Interception",
+        description:
+          "Mock and intercept network requests for isolated testing.",
+      },
+    ],
+    installation: {
+      title: "Setup",
+      code: `# Install Puppeteer
+npm install puppeteer
+
+# Or for just the core library (bring your own browser)
+npm install puppeteer-core
+
+# Add environment variable
+echo "PLOP_API_KEY=your_api_key" >> .env`,
+    },
+    quickStart: {
+      title: "Basic Email Test",
+      description: "Test email flows with Puppeteer.",
+      code: `const puppeteer = require('puppeteer');
+
+async function testSignupEmail() {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  const testEmail = \`puppeteer+\${Date.now()}@in.plop.email\`;
+
+  try {
+    // Complete signup
+    await page.goto('https://yourapp.com/signup');
+    await page.type('[name="email"]', testEmail);
+    await page.type('[name="password"]', 'SecurePass123!');
+    await page.click('button[type="submit"]');
+    await page.waitForSelector('.success-message');
+
+    // Wait for email delivery
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Fetch email via plop API
+    const response = await fetch(
+      \`https://api.plop.email/v1/messages/latest?to=\${testEmail}\`,
+      {
+        headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` }
+      }
+    );
+    const email = await response.json();
+
+    // Verify
+    console.assert(email.subject.includes('Welcome'), 'Should have welcome subject');
+    console.assert(email.htmlContent.includes('Get Started'), 'Should have CTA');
+
+  } finally {
+    await browser.close();
+  }
+}
+
+testSignupEmail();`,
+    },
+    advancedExample: {
+      title: "Email Link Navigation",
+      description: "Extract links from emails and navigate to them.",
+      code: `const puppeteer = require('puppeteer');
+
+async function testEmailVerificationFlow() {
+  const browser = await puppeteer.launch({ headless: false });
+  const page = await browser.newPage();
+  const testEmail = \`verify+\${Date.now()}@in.plop.email\`;
+
+  // Trigger verification email
+  await page.goto('https://yourapp.com/signup');
+  await page.type('[name="email"]', testEmail);
+  await page.type('[name="password"]', 'SecurePass123!');
+  await page.click('button[type="submit"]');
+
+  // Fetch verification email
+  await new Promise(r => setTimeout(r, 3000));
+  const response = await fetch(
+    \`https://api.plop.email/v1/messages/latest?to=\${testEmail}\`,
+    { headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` } }
+  );
+  const email = await response.json();
+
+  // Extract verification link
+  const linkMatch = email.htmlContent.match(/href="([^"]*verify[^"]*)"/);
+  if (!linkMatch) throw new Error('No verification link found');
+
+  // Navigate to verification link
+  await page.goto(linkMatch[1]);
+
+  // Verify account is now confirmed
+  await page.waitForSelector('text=Email verified');
+
+  // Take screenshot as evidence
+  await page.screenshot({ path: 'verified.png' });
+
+  await browser.close();
+}`,
+    },
+    tips: [
+      "Use page.waitForNetworkIdle() after form submissions before fetching emails",
+      "Set a longer navigation timeout for pages that send emails",
+      "Use puppeteer-extra for additional features like stealth mode",
+      "Consider using jest-puppeteer for test framework integration",
+    ],
+    relatedIntegrations: ["playwright", "cypress"],
+    relatedUseCases: ["e2e-testing", "magic-links"],
+    docsUrl: "https://pptr.dev/",
+  },
+  {
+    slug: "webdriverio",
+    name: "WebdriverIO",
+    description: "Browser automation with WebdriverIO",
+    metaDescription:
+      "Integrate plop.email with WebdriverIO for email verification in your automated tests. Test email flows with WDIO's powerful test runner.",
+    icon: "Zap",
+    category: "testing",
+    heroTitle: "WebdriverIO + plop.email",
+    heroDescription:
+      "Add email verification to your WebdriverIO tests. Leverage WDIO's powerful async API and test runner capabilities.",
+    features: [
+      {
+        title: "Built-in Test Runner",
+        description:
+          "Integrated test runner with Mocha, Jasmine, or Cucumber support.",
+      },
+      {
+        title: "Multi-Browser Support",
+        description:
+          "Test across Chrome, Firefox, Safari, and mobile browsers.",
+      },
+      {
+        title: "Service Integration",
+        description:
+          "Easy integration with Sauce Labs, BrowserStack, and other services.",
+      },
+      {
+        title: "Page Object Pattern",
+        description: "Built-in support for maintainable test architecture.",
+      },
+    ],
+    installation: {
+      title: "Setup",
+      code: `# Install WebdriverIO
+npm init wdio@latest ./
+
+# Select your preferences in the wizard
+
+# Add to wdio.conf.js
+export const config = {
+  // ... your config
+  before: function () {
+    global.PLOP_API_KEY = process.env.PLOP_API_KEY;
+  },
+};`,
+    },
+    quickStart: {
+      title: "WDIO Email Test",
+      description: "Test email flows with WebdriverIO.",
+      code: `// test/specs/email.e2e.js
+describe('Email verification', () => {
+  it('should send welcome email after signup', async () => {
+    const testEmail = \`wdio+\${Date.now()}@in.plop.email\`;
+
+    // Navigate and fill form
+    await browser.url('/signup');
+    await $('[name="email"]').setValue(testEmail);
+    await $('[name="password"]').setValue('SecurePass123!');
+    await $('button[type="submit"]').click();
+
+    // Wait for success
+    await expect($('.success-message')).toBeDisplayed();
+
+    // Fetch email
+    await browser.pause(2000);
+    const response = await fetch(
+      \`https://api.plop.email/v1/messages/latest?to=\${testEmail}\`,
+      { headers: { Authorization: \`Bearer \${global.PLOP_API_KEY}\` } }
+    );
+    const email = await response.json();
+
+    // Assert
+    expect(email.subject).toContain('Welcome');
+    expect(email.htmlContent).toContain('Get Started');
+  });
+});`,
+    },
+    advancedExample: {
+      title: "Custom Email Command",
+      description: "Add a reusable command for email fetching.",
+      code: `// wdio.conf.js - Add custom command
+export const config = {
+  before: function () {
+    browser.addCommand('getEmail', async function (toAddress) {
+      const maxRetries = 5;
+      const delay = 2000;
+
+      for (let i = 0; i < maxRetries; i++) {
+        const response = await fetch(
+          \`https://api.plop.email/v1/messages/latest?to=\${toAddress}\`,
+          { headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` } }
+        );
+        const data = await response.json();
+
+        if (!data.error) return data;
+        await browser.pause(delay);
+      }
+      throw new Error(\`No email received for \${toAddress}\`);
+    });
+  },
+};
+
+// Usage in test
+describe('Password reset', () => {
+  it('should receive reset email', async () => {
+    const testEmail = \`reset+\${Date.now()}@in.plop.email\`;
+
+    await browser.url('/forgot-password');
+    await $('[name="email"]').setValue(testEmail);
+    await $('button').click();
+
+    const email = await browser.getEmail(testEmail);
+    expect(email.subject).toContain('Reset');
+  });
+});`,
+    },
+    tips: [
+      "Add custom commands for email operations to keep tests DRY",
+      "Use browser.pause() strategically for email delivery timing",
+      "Configure retries in wdio.conf.js for email-dependent tests",
+      "Use Allure reporter to capture email verification results",
+    ],
+    relatedIntegrations: ["selenium", "playwright"],
+    relatedUseCases: ["e2e-testing", "transactional-emails"],
+    docsUrl: "https://webdriver.io/docs/gettingstarted",
+  },
+  {
+    slug: "vitest",
+    name: "Vitest",
+    description: "Fast unit testing with Vitest",
+    metaDescription:
+      "Use plop.email with Vitest for email testing in your Vite projects. Fast, ESM-native testing with email verification.",
+    icon: "Sparkles",
+    category: "testing",
+    heroTitle: "Vitest + plop.email",
+    heroDescription:
+      "Add email verification to your Vitest test suites. Fast, ESM-native testing with Vite's speed.",
+    features: [
+      {
+        title: "Vite-Powered",
+        description:
+          "Instant test startup with Vite's transformation pipeline.",
+      },
+      {
+        title: "ESM Native",
+        description: "First-class ES modules support, no CommonJS workarounds.",
+      },
+      {
+        title: "Jest Compatible",
+        description: "Familiar API with Jest-compatible matchers and mocks.",
+      },
+      {
+        title: "TypeScript Ready",
+        description: "Out-of-the-box TypeScript support without configuration.",
+      },
+    ],
+    installation: {
+      title: "Setup",
+      code: `# Install Vitest
+npm install -D vitest
+
+# Add to package.json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:run": "vitest run"
+  }
+}
+
+# Create vitest.config.ts
+import { defineConfig } from 'vitest/config';
+export default defineConfig({
+  test: {
+    environment: 'node',
+  },
+});`,
+    },
+    quickStart: {
+      title: "Basic Email Test",
+      description: "Test email sending in your application with Vitest.",
+      code: `import { describe, it, expect } from 'vitest';
+import { sendWelcomeEmail } from '../src/email';
+
+describe('Email Service', () => {
+  it('sends welcome email with correct content', async () => {
+    const testEmail = \`vitest+\${Date.now()}@in.plop.email\`;
+
+    // Send email from your app
+    await sendWelcomeEmail({
+      to: testEmail,
+      name: 'Test User',
+    });
+
+    // Fetch from plop
+    const response = await fetch(
+      \`https://api.plop.email/v1/messages/latest?to=\${testEmail}\`,
+      { headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` } }
+    );
+    const email = await response.json();
+
+    // Assert
+    expect(email.subject).toBe('Welcome to Our App!');
+    expect(email.htmlContent).toContain('Test User');
+  });
+});`,
+    },
+    advancedExample: {
+      title: "Email Test Helper",
+      description: "Create a reusable email testing utility.",
+      code: `// test/helpers/plop.ts
+export async function fetchEmail(to: string, options?: {
+  timeout?: number;
+  subject?: RegExp;
+}) {
+  const { timeout = 10000, subject } = options ?? {};
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeout) {
+    const response = await fetch(
+      \`https://api.plop.email/v1/messages/latest?to=\${to}\`,
+      { headers: { Authorization: \`Bearer \${process.env.PLOP_API_KEY}\` } }
+    );
+    const email = await response.json();
+
+    if (!email.error) {
+      if (subject && !subject.test(email.subject)) {
+        await new Promise(r => setTimeout(r, 1000));
+        continue;
+      }
+      return email;
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  throw new Error(\`Timeout waiting for email to \${to}\`);
+}
+
+// Usage in tests
+import { fetchEmail } from './helpers/plop';
+
+it('receives password reset email', async () => {
+  const testEmail = \`reset+\${Date.now()}@in.plop.email\`;
+  await requestPasswordReset(testEmail);
+
+  const email = await fetchEmail(testEmail, {
+    subject: /reset/i,
+    timeout: 15000,
+  });
+
+  expect(email.htmlContent).toContain('Reset your password');
+});`,
+    },
+    tips: [
+      "Use vi.setSystemTime() for testing email timestamps",
+      "Create a beforeEach hook to generate unique test emails",
+      "Use test.concurrent for parallel email tests with unique addresses",
+      "Configure testTimeout for longer email delivery tests",
+    ],
+    relatedIntegrations: ["jest", "playwright"],
+    relatedUseCases: ["transactional-emails", "ci-cd-pipelines"],
+    docsUrl: "https://vitest.dev/",
   },
 ];
 

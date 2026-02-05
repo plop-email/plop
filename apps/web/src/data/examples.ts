@@ -73,8 +73,8 @@ test.describe('User Signup', () => {
     const welcomeEmail = await fetchEmail(request, email);
 
     expect(welcomeEmail.subject).toContain('Welcome');
-    expect(welcomeEmail.html).toContain('Test User');
-    expect(welcomeEmail.html).toContain('Get Started');
+    expect(welcomeEmail.htmlContent).toContain('Test User');
+    expect(welcomeEmail.htmlContent).toContain('Get Started');
   });
 
   test('verification link works', async ({ page, request }) => {
@@ -92,7 +92,7 @@ test.describe('User Signup', () => {
     const verifyEmail = await fetchEmail(request, email);
 
     // Extract verification link
-    const linkMatch = verifyEmail.html.match(/href="([^"]*verify[^"]*)"/);
+    const linkMatch = verifyEmail.htmlContent.match(/href="([^"]*verify[^"]*)"/);
     expect(linkMatch).toBeTruthy();
 
     // Click verification link
@@ -195,10 +195,10 @@ describe('Password Reset', () => {
       .then((email) => {
         // Verify email content
         expect(email.subject).to.include('Reset');
-        expect(email.html).to.include('reset your password');
+        expect(email.htmlContent).to.include('reset your password');
 
         // Extract reset link
-        const linkMatch = email.html.match(/href="([^"]*reset[^"]*)"/);
+        const linkMatch = email.htmlContent.match(/href="([^"]*reset[^"]*)"/);
         expect(linkMatch).to.not.be.null;
 
         // Visit reset link
@@ -221,7 +221,7 @@ describe('Password Reset', () => {
 
     cy.waitForEmail(\`expire+\${Date.now()}@in.plop.email\`, { subject: 'Reset' })
       .then((email) => {
-        const linkMatch = email.html.match(/href="([^"]*reset[^"]*)"/);
+        const linkMatch = email.htmlContent.match(/href="([^"]*reset[^"]*)"/);
 
         // Use the link once
         cy.visit(linkMatch[1]);
@@ -323,9 +323,9 @@ describe('Email Service', () => {
 
     // Verify content
     expect(email.subject).toBe(\`Welcome to YourApp, \${userName}!\`);
-    expect(email.html).toContain(\`Welcome, \${userName}!\`);
-    expect(email.html).toContain('Go to Dashboard');
-    expect(email.html).toContain('https://yourapp.com/dashboard');
+    expect(email.htmlContent).toContain(\`Welcome, \${userName}!\`);
+    expect(email.htmlContent).toContain('Go to Dashboard');
+    expect(email.htmlContent).toContain('https://yourapp.com/dashboard');
   });
 
   it('handles special characters in name', async () => {
@@ -338,7 +338,7 @@ describe('Email Service', () => {
     const email = await fetchEmail(testEmail);
 
     // Verify HTML escaping
-    expect(email.html).toContain("O'Brien");
+    expect(email.htmlContent).toContain("O'Brien");
     expect(email.subject).toContain("O'Brien");
   });
 });`,
@@ -451,10 +451,10 @@ class TestOrderEmails:
         received = plop.get_latest(email)
 
         assert "Order Confirmation" in received["subject"]
-        assert "ORD-123" in received["html"]
-        assert "Widget" in received["html"]
-        assert "$29.99" in received["html"]
-        assert "$109.97" in received["html"]
+        assert "ORD-123" in received["htmlContent"]
+        assert "Widget" in received["htmlContent"]
+        assert "$29.99" in received["htmlContent"]
+        assert "$109.97" in received["htmlContent"]
 
     def test_shipping_notification_has_tracking(self, plop, test_email):
         """Shipping notification should include tracking link."""
@@ -470,8 +470,8 @@ class TestOrderEmails:
         received = plop.get_latest(email)
 
         assert "shipped" in received["subject"].lower()
-        assert "1Z999AA10123456784" in received["html"]
-        assert "track" in received["html"].lower()
+        assert "1Z999AA10123456784" in received["htmlContent"]
+        assert "track" in received["htmlContent"].lower()
 
     @pytest.mark.parametrize("locale,expected", [
         ("en", "Your order has shipped"),
@@ -491,7 +491,7 @@ class TestOrderEmails:
         )
 
         received = plop.get_latest(email)
-        assert expected in received["html"]`,
+        assert expected in received["htmlContent"]`,
     explanation: [
       {
         title: "pytest Fixtures",

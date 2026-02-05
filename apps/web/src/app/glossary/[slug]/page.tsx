@@ -14,6 +14,7 @@ import {
 } from "@/data/glossary";
 import { getRelatedUseCases } from "@/data/use-cases";
 import { siteConfig } from "@/lib/site";
+import { generateBreadcrumbSchema } from "@/lib/schema";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -48,15 +49,23 @@ export async function generateMetadata({
 
 function StructuredData({
   term,
+  slug,
 }: {
   term: { term: string; fullDefinition: string };
+  slug: string;
 }) {
   // SAFETY: Schema.org JSON-LD using data from our own glossary data file, not user input
-  const schemaData = {
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Glossary", url: `${siteConfig.url}/glossary` },
+    { name: term.term },
+  ]);
+
+  const definedTermSchema = {
     "@context": "https://schema.org",
     "@type": "DefinedTerm",
     name: term.term,
     description: term.fullDefinition,
+    url: `${siteConfig.url}/glossary/${slug}`,
     inDefinedTermSet: {
       "@type": "DefinedTermSet",
       name: "Email Testing Glossary",
@@ -64,11 +73,13 @@ function StructuredData({
     },
   };
 
+  // eslint-disable-next-line react/no-danger -- Schema.org structured data from trusted internal data
   return (
-    // eslint-disable-next-line react/no-danger -- Schema.org structured data from trusted internal data
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify([breadcrumbSchema, definedTermSchema]),
+      }}
     />
   );
 }
@@ -86,7 +97,7 @@ export default async function GlossaryTermPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#0B0D0F]">
-      <StructuredData term={term} />
+      <StructuredData term={term} slug={slug} />
       <Header />
       <main className="pt-32 pb-20">
         {/* Breadcrumbs */}

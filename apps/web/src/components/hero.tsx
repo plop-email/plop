@@ -24,9 +24,9 @@ export function Hero() {
           {/* Left: Copy */}
           <div className="text-center lg:text-left">
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-[3.5rem] leading-[1.1] text-white text-balance mb-4">
-              Reliable email tests.
+              Email Testing API
               <br />
-              <span className="text-[#B8FF2C]">Finally.</span>
+              <span className="text-[#B8FF2C]">for developers.</span>
             </h1>
             <p className="text-[#A3A7AE] text-lg leading-relaxed mb-8 max-w-md mx-auto lg:mx-0">
               Send emails to Plop, fetch via API, assert in tests. No mail

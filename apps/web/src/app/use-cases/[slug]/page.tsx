@@ -10,6 +10,7 @@ import { CodeBlock } from "@/components/code-block";
 import { useCases, getUseCase, getRelatedUseCases } from "@/data/use-cases";
 import { getRelatedIntegrations } from "@/data/integrations";
 import { siteConfig } from "@/lib/site";
+import { generateBreadcrumbSchema, generateArticleSchema } from "@/lib/schema";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -61,8 +62,28 @@ export default async function UseCasePage({ params }: PageProps) {
     useCase.relatedIntegrations,
   );
 
+  // SAFETY: Schema.org JSON-LD using data from our own use-cases data file, not user input
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Use Cases", url: `${siteConfig.url}/use-cases` },
+    { name: useCase.title },
+  ]);
+
+  const articleSchema = generateArticleSchema({
+    headline: useCase.heroTitle,
+    description: useCase.metaDescription,
+    datePublished: new Date().toISOString(),
+    url: `${siteConfig.url}/use-cases/${slug}`,
+  });
+
   return (
     <div className="min-h-screen bg-[#0B0D0F]">
+      {/* eslint-disable-next-line react/no-danger -- Schema.org structured data from trusted internal data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([breadcrumbSchema, articleSchema]),
+        }}
+      />
       <Header />
       <main className="pt-32 pb-20">
         {/* Breadcrumbs */}

@@ -10,6 +10,7 @@ import { Section } from "@/components/section";
 import { UpdatesToolbar } from "@/components/updates-toolbar";
 import { getBlogPosts } from "@/lib/blog";
 import { siteConfig } from "@/lib/site";
+import { generateBreadcrumbSchema } from "@/lib/schema";
 
 export async function generateStaticParams() {
   const posts = getBlogPosts();
@@ -82,41 +83,50 @@ export default async function Page(props: {
     .filter((entry) => entry.slug !== post.slug)
     .slice(0, 3);
 
+  // SAFETY: Schema.org JSON-LD using data from our own blog posts, not user input
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Updates", url: `${siteConfig.url}/updates` },
+    { name: post.metadata.title },
+  ]);
+
+  const blogPostingSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.metadata.title,
+    datePublished: post.metadata.publishedAt,
+    dateModified: post.metadata.publishedAt,
+    description: post.metadata.summary,
+    image: post.metadata.image
+      ? `${siteConfig.url}${post.metadata.image}`
+      : `${siteConfig.url}/opengraph-image.png`,
+    url: `${siteConfig.url}/updates/${post.slug}`,
+    author: {
+      "@type": "Person",
+      name: siteConfig.author,
+      url: "https://x.com/vahaah",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: siteConfig.name,
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteConfig.url}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${siteConfig.url}/updates/${post.slug}`,
+    },
+  };
+
   return (
     <div className="flex justify-center py-16 pb-24">
+      {/* eslint-disable-next-line react/no-danger -- Schema.org structured data from trusted internal data */}
       <script
         type="application/ld+json"
         suppressHydrationWarning
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            headline: post.metadata.title,
-            datePublished: post.metadata.publishedAt,
-            dateModified: post.metadata.publishedAt,
-            description: post.metadata.summary,
-            image: post.metadata.image
-              ? `${siteConfig.url}${post.metadata.image}`
-              : `${siteConfig.url}/opengraph-image.png`,
-            url: `${siteConfig.url}/updates/${post.slug}`,
-            author: {
-              "@type": "Person",
-              name: siteConfig.author,
-              url: "https://x.com/vahaah",
-            },
-            publisher: {
-              "@type": "Organization",
-              name: siteConfig.name,
-              logo: {
-                "@type": "ImageObject",
-                url: `${siteConfig.url}/logo.png`,
-              },
-            },
-            mainEntityOfPage: {
-              "@type": "WebPage",
-              "@id": `${siteConfig.url}/updates/${post.slug}`,
-            },
-          }),
+          __html: JSON.stringify([breadcrumbSchema, blogPostingSchema]),
         }}
       />
 
