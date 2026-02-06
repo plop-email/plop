@@ -13,6 +13,7 @@
     "messages-api",
     "e2e-email-polling",
     "inbox-webhook-contract",
+    "webhooks",
     "inbox-worker-admin",
     "inbox-worker-deployment",
     "---Security---",

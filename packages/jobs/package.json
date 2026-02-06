@@ -2,14 +2,21 @@
   "name": "@plop/jobs",
   "version": "0.1.0",
   "private": true,
+  "exports": {
+    "./schema": "./src/schema.ts"
+  },
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "lint": "biome check .",
-    "jobs": "bunx trigger.dev@beta dev",
+    "dev": "trigger dev",
+    "deploy": "trigger deploy",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@trigger.dev/sdk": "4.3.0"
+    "@plop/db": "workspace:*",
+    "@trigger.dev/sdk": "4.3.0",
+    "trigger.dev": "4.3.0",
+    "zod": "^4.2.1"
   }
 }

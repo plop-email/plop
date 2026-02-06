@@ -5,6 +5,7 @@ import {
   isTrialExpired,
 } from "@plop/billing";
 import { db } from "@plop/db/client";
+import { listActiveWebhookEndpointsForTeam } from "@plop/db/queries";
 import {
   inboxMailboxes,
   inboxMessages,
@@ -256,6 +257,14 @@ async function handleInboxWebhook(payload: z.infer<typeof inboxWebhookSchema>) {
           updatedAt: new Date(),
         },
       });
+
+    // Dispatch webhook notifications (non-blocking)
+    dispatchWebhooks(teamId, message.id).catch((err) => {
+      logger.error(
+        { err, teamId, messageId: message.id },
+        "Webhook dispatch failed",
+      );
+    });
   }
 
   return {
@@ -263,6 +272,23 @@ async function handleInboxWebhook(payload: z.infer<typeof inboxWebhookSchema>) {
     status: message ? "stored" : "duplicate",
     inboxMessageId: message?.id ?? null,
   } satisfies WebhookResult;
+}
+
+async function dispatchWebhooks(teamId: string, messageId: string) {
+  const endpoints = await listActiveWebhookEndpointsForTeam(db, teamId);
+  if (endpoints.length === 0) return;
+
+  const { tasks } = await import("@trigger.dev/sdk");
+
+  await Promise.all(
+    endpoints.map((endpoint) =>
+      tasks.trigger("deliver-webhook", {
+        webhookEndpointId: endpoint.id,
+        messageId,
+        teamId,
+      }),
+    ),
+  );
 }
 
 export async function inboxWebhookHandler(c: Context) {

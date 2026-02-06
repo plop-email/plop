@@ -9,7 +9,12 @@
       "Bash(bun run:*)",
       "Bash(grep:*)",
       "Skill(pricing-strategy)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:plop.email)",
+      "Bash(npx tsc:*)",
+      "Bash(bunx tsc:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:trigger.dev)"
     ]
   }
 }

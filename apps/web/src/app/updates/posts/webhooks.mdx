@@ -1,0 +1,60 @@
+---
+title: "Webhooks are live"
+summary: "Get real-time push notifications when emails arrive. Signed payloads, automatic retries, and delivery logs — all built in."
+publishedAt: "2026-02-06"
+tag: "Product"
+image: "/images/webhooks.png"
+---
+
+You can now receive real-time webhook notifications when emails land in your mailbox. No more polling.
+
+## How it works
+
+Register an HTTPS endpoint in **Settings → Webhooks**. When a new email arrives, plop sends a `POST` request with the message metadata:
+
+```json
+{
+  "event": "email.received",
+  "timestamp": "2026-02-06T12:00:00.000Z",
+  "data": {
+    "id": "msg_abc123",
+    "mailbox": "qa",
+    "mailboxWithTag": "qa+signup",
+    "tag": "signup",
+    "from": "sender@example.com",
+    "to": "qa+signup@in.plop.email",
+    "subject": "Welcome to Acme",
+    "receivedAt": "2026-02-06T11:59:58.000Z",
+    "domain": "in.plop.email"
+  }
+}
+```
+
+## Signed payloads
+
+Every request includes an `X-Plop-Signature` header so you can verify the payload was sent by plop and hasn't been tampered with:
+
+```ts
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+const [tPart, v1Part] = header.split(",");
+const timestamp = tPart.replace("t=", "");
+const receivedSig = v1Part.replace("v1=", "");
+
+const expected = createHmac("sha256", secret)
+  .update(`${timestamp}.${body}`)
+  .digest("hex");
+
+const valid = timingSafeEqual(
+  Buffer.from(expected),
+  Buffer.from(receivedSig),
+);
+```
+
+## Retries and delivery logs
+
+Failed deliveries are retried up to 3 times with exponential backoff. You can inspect every attempt — status code, latency, and error — in the delivery logs under **Settings → Webhooks**.
+
+## Plan availability
+
+Webhooks are available on **Team** plans and above. [Read the docs](https://docs.plop.email/docs/webhooks) for the full setup guide.

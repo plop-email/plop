@@ -1,12 +1,12 @@
 import { defineConfig } from "@trigger.dev/sdk";
 
 export default defineConfig({
-  // Replace <your-project-ref> with your project id: https://trigger.dev/docs/trigger-config
-  project: "<your-project-ref>",
+  project: process.env.TRIGGER_PROJECT_ID!,
+  runtime: "node",
   logLevel: "log",
-  maxDuration: 3600,
+  maxDuration: 60,
   retries: {
-    enabledInDev: true,
+    enabledInDev: false,
     default: {
       maxAttempts: 3,
       minTimeoutInMs: 1000,
@@ -15,4 +15,8 @@ export default defineConfig({
       randomize: true,
     },
   },
+  build: {
+    external: ["pino"],
+  },
+  dirs: ["./src/tasks"],
 });

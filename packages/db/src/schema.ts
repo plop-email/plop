@@ -283,3 +283,85 @@ export const apiKeySecrets = privateSchema.table(
     ),
   }),
 );
+
+export const webhookEndpoints = pgTable(
+  "webhook_endpoints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    teamId: uuid("team_id")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    description: text("description"),
+    secretMasked: text("secret_masked").notNull(),
+    events: text("events")
+      .array()
+      .notNull()
+      .default(sql`'{email.received}'::text[]`),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    teamIdIndex: index("idx_webhook_endpoints_team_id").on(table.teamId),
+    uniqueTeamUrl: uniqueIndex("webhook_endpoints_unique_team_url").on(
+      table.teamId,
+      table.url,
+    ),
+  }),
+);
+
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    webhookEndpointId: uuid("webhook_endpoint_id")
+      .notNull()
+      .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
+    event: text("event").notNull(),
+    messageId: uuid("message_id").references(() => inboxMessages.id, {
+      onDelete: "set null",
+    }),
+    status: text("status").notNull().default("pending"),
+    httpStatus: integer("http_status"),
+    responseBody: text("response_body"),
+    latencyMs: integer("latency_ms"),
+    attempt: integer("attempt").notNull().default(1),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    endpointIdIndex: index("idx_webhook_deliveries_endpoint_id").on(
+      table.webhookEndpointId,
+    ),
+    endpointCreatedIndex: index("idx_webhook_deliveries_endpoint_created").on(
+      table.webhookEndpointId,
+      table.createdAt,
+    ),
+  }),
+);
+
+export const webhookSecrets = privateSchema.table(
+  "webhook_secrets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    webhookEndpointId: uuid("webhook_endpoint_id")
+      .notNull()
+      .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
+    secret: text("secret").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    endpointIdUnique: uniqueIndex("webhook_secrets_endpoint_unique").on(
+      table.webhookEndpointId,
+    ),
+  }),
+);

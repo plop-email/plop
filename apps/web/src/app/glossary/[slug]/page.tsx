@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Section } from "@/components/section";
 import { Header } from "@/components/header";
@@ -15,6 +16,34 @@ import {
 import { getRelatedUseCases } from "@/data/use-cases";
 import { siteConfig } from "@/lib/site";
 import { generateBreadcrumbSchema } from "@/lib/schema";
+
+function parseInlineMarkdown(text: string): ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-semibold text-white">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code
+          key={i}
+          className="bg-white/10 px-1.5 py-0.5 font-mono text-xs text-white"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -120,7 +149,7 @@ export default async function GlossaryTermPage({ params }: PageProps) {
               What is {term.term}?
             </h1>
             <p className="text-xl text-gray-300 leading-relaxed">
-              {term.fullDefinition}
+              {parseInlineMarkdown(term.fullDefinition)}
             </p>
           </div>
         </Section>
@@ -147,17 +176,40 @@ export default async function GlossaryTermPage({ params }: PageProps) {
                         />
                       );
                     }
+                    // Handle numbered lists
+                    if (/\n\d+\.\s/.test(paragraph)) {
+                      const [intro, ...rest] = paragraph.split(/\n(?=\d+\.\s)/);
+                      const items = rest.map((item) =>
+                        item.replace(/^\d+\.\s/, ""),
+                      );
+                      return (
+                        <div key={`olist-${i}`}>
+                          {intro && (
+                            <p className="text-gray-300 mb-3">
+                              {parseInlineMarkdown(intro)}
+                            </p>
+                          )}
+                          <ol className="list-decimal list-inside space-y-1 text-gray-300">
+                            {items.map((item) => (
+                              <li key={item}>{parseInlineMarkdown(item)}</li>
+                            ))}
+                          </ol>
+                        </div>
+                      );
+                    }
                     // Handle bullet lists
                     if (paragraph.includes("\n- ")) {
                       const [intro, ...items] = paragraph.split("\n- ");
                       return (
                         <div key={`list-${i}`}>
                           {intro && (
-                            <p className="text-gray-300 mb-3">{intro}</p>
+                            <p className="text-gray-300 mb-3">
+                              {parseInlineMarkdown(intro)}
+                            </p>
                           )}
                           <ul className="list-disc list-inside space-y-1 text-gray-300">
                             {items.map((item) => (
-                              <li key={item}>{item}</li>
+                              <li key={item}>{parseInlineMarkdown(item)}</li>
                             ))}
                           </ul>
                         </div>
@@ -182,7 +234,7 @@ export default async function GlossaryTermPage({ params }: PageProps) {
                         key={`para-${i}`}
                         className="text-gray-300 leading-relaxed"
                       >
-                        {paragraph}
+                        {parseInlineMarkdown(paragraph)}
                       </p>
                     );
                   })}

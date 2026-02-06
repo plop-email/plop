@@ -15,6 +15,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AlignJustify, ArrowUpDown, ChevronDown, List } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
 import { useInboxFilterParams } from "@/hooks/use-inbox-filter-params";
+import { useInboxRealtime } from "@/hooks/use-inbox-realtime";
 import { InboxFilters } from "./inbox-filters";
 import { InboxFilterChips } from "./inbox-filter-chips";
 
@@ -57,6 +58,7 @@ const pageSizeOptions = [50, 100, 200] as const;
 type DensityOption = "comfortable" | "compact";
 
 export function InboxView() {
+  useInboxRealtime();
   const trpc = useTRPC();
   const { filter, setFilter, hasFilters } = useInboxFilterParams();
   const { data: mailboxes = [] } = useQuery(

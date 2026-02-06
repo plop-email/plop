@@ -1,4 +1,4 @@
-import { getPlanEntitlements, isTrialExpired } from "@plop/billing";
+import { getPlanEntitlements } from "@plop/billing";
 import {
   ApiKeyHashConflictError,
   createApiKeyWithSecret,
@@ -6,13 +6,16 @@ import {
   getMailboxByName,
   listApiKeysByTeam,
 } from "@plop/db/queries";
-import { teams } from "@plop/db/schema";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { generateApiKey, hashApiKey } from "../../utils/api-keys";
-import type { TRPCContext } from "../init";
 import { createTRPCRouter, teamProcedure } from "../init";
+import {
+  assertTrialNotExpired,
+  getTeamPlan,
+  requireOwner,
+  type TeamCtx,
+} from "./helpers";
 
 const mailboxNameSchema = z
   .string()
@@ -27,7 +30,7 @@ const mailboxNameSchema = z
 
 const scopeSchema = z.enum(["api.full", "email.full", "email.mailbox"]);
 
-function maskKey(key: string) {
+function maskKey(key: string): string {
   const prefix = key.slice(0, 3);
   const suffix = key.slice(-3);
   const starCount = Math.max(3, key.length - 6);
@@ -55,48 +58,7 @@ const deleteApiKeySchema = z.object({
   id: z.string().uuid(),
 });
 
-function requireOwner(role: "owner" | "member") {
-  if (role !== "owner") {
-    throw new TRPCError({ code: "FORBIDDEN" });
-  }
-}
-
-async function assertTrialNotExpired(ctx: {
-  db: TRPCContext["db"];
-  teamId: string;
-}) {
-  const [team] = await ctx.db
-    .select({
-      createdAt: teams.createdAt,
-      subscriptionStatus: teams.subscriptionStatus,
-    })
-    .from(teams)
-    .where(eq(teams.id, ctx.teamId))
-    .limit(1);
-
-  if (team?.subscriptionStatus !== "trialing") return;
-  if (!isTrialExpired(team.createdAt)) return;
-
-  throw new TRPCError({
-    code: "FORBIDDEN",
-    message: "Trial ended. Upgrade to create API keys.",
-  });
-}
-
-async function getTeamPlan(ctx: { db: TRPCContext["db"]; teamId: string }) {
-  const [team] = await ctx.db
-    .select({ plan: teams.plan })
-    .from(teams)
-    .where(eq(teams.id, ctx.teamId))
-    .limit(1);
-
-  return team?.plan ?? "starter";
-}
-
-async function assertApiKeyLimit(ctx: {
-  db: TRPCContext["db"];
-  teamId: string;
-}) {
+async function assertApiKeyLimit(ctx: TeamCtx): Promise<void> {
   const plan = await getTeamPlan(ctx);
   const entitlements = getPlanEntitlements(plan);
 
