@@ -258,13 +258,15 @@ async function handleInboxWebhook(payload: z.infer<typeof inboxWebhookSchema>) {
         },
       });
 
-    // Dispatch webhook notifications (non-blocking)
-    dispatchWebhooks(teamId, message.id).catch((err) => {
-      logger.error(
-        { err, teamId, messageId: message.id },
-        "Webhook dispatch failed",
-      );
-    });
+    // Dispatch webhook notifications (non-blocking, only for entitled plans)
+    if (entitlements.webhooks) {
+      dispatchWebhooks(teamId, message.id).catch((err) => {
+        logger.error(
+          { err, teamId, messageId: message.id },
+          "Webhook dispatch failed",
+        );
+      });
+    }
   }
 
   return {

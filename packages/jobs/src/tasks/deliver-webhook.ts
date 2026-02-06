@@ -83,7 +83,7 @@ export const deliverWebhookTask = schemaTask({
     const delivery = await createWebhookDelivery(db, {
       webhookEndpointId,
       event: "email.received",
-      messageId,
+      messageId: messageId ?? null,
       status: "pending",
       attempt: attemptNumber,
     });

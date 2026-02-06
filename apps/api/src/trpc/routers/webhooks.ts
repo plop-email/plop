@@ -142,6 +142,8 @@ export const webhooksRouter = createTRPCRouter({
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       requireOwner(ctx.teamRole);
+      await assertTrialNotExpired(ctx);
+      await assertWebhooksEntitlement(ctx);
 
       const endpoint = await getWebhookEndpointById(ctx.db, {
         id: input.id,
