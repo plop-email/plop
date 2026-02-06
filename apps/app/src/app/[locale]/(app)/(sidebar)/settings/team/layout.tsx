@@ -15,6 +15,7 @@ export default function Layout(props: { children: React.ReactNode }) {
                 { title: "General", href: "/settings/team/general" },
                 { title: "Members", href: "/settings/team/members" },
                 { title: "API keys", href: "/settings/team/api-keys" },
+                { title: "Webhooks", href: "/settings/team/webhooks" },
                 { title: "Billing", href: "/settings/team/billing" },
               ]}
             />

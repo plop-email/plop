@@ -67,7 +67,7 @@ export const faqItems: FAQItem[] = [
   {
     question: "How do I handle email delivery delays in tests?",
     answer:
-      "Email delivery typically takes 1-3 seconds. In your tests, either: 1) Add a short delay before fetching (simple but slower), 2) Poll the API with retries until the email arrives (recommended), or 3) Use webhooks (coming soon) to get notified when emails arrive.",
+      "Email delivery typically takes 1-3 seconds. In your tests, either: 1) Add a short delay before fetching (simple but slower), 2) Poll the API with retries until the email arrives (recommended), or 3) Use webhooks to get notified instantly when emails arrive. See docs for setup.",
     category: "technical",
   },
   {

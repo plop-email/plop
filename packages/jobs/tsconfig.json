@@ -1,5 +1,10 @@
 {
   "extends": "@plop/typescript/base.json",
+  "compilerOptions": {
+    "paths": {
+      "@jobs/*": ["./src/*"]
+    }
+  },
   "include": ["."],
   "exclude": ["node_modules"]
 }

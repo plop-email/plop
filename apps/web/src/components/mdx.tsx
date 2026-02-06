@@ -229,6 +229,12 @@ const components = {
   li: (props: React.HTMLAttributes<HTMLLIElement>) => (
     <li className="leading-relaxed" {...props} />
   ),
+  strong: (props: React.HTMLAttributes<HTMLElement>) => (
+    <strong className="font-semibold text-white" {...props} />
+  ),
+  em: (props: React.HTMLAttributes<HTMLElement>) => (
+    <em className="italic text-white/90" {...props} />
+  ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
       className="mt-6 border-l-2 border-[#B8FF2C] pl-4 text-white/80 italic"

@@ -93,9 +93,9 @@ export const comparisons: Comparison[] = [
           },
           {
             feature: "Webhooks",
-            plop: "Coming soon",
+            plop: true,
             competitor: true,
-            winner: "competitor",
+            winner: "tie",
           },
           {
             feature: "SMS testing",

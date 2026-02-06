@@ -6,6 +6,7 @@ import { inboxRouter } from "./inbox";
 import { metricsRouter } from "./metrics";
 import { teamRouter } from "./team";
 import { userRouter } from "./user";
+import { webhooksRouter } from "./webhooks";
 
 export const appRouter = createTRPCRouter({
   apiKeys: apiKeysRouter,
@@ -14,6 +15,7 @@ export const appRouter = createTRPCRouter({
   metrics: metricsRouter,
   user: userRouter,
   team: teamRouter,
+  webhooks: webhooksRouter,
 });
 
 export type AppRouter = typeof appRouter;
