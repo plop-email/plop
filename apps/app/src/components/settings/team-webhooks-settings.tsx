@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@plop/ui/table";
+import { createClient } from "@plop/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTeamMembership } from "@/hooks/use-team-membership";
@@ -40,7 +41,11 @@ function toDate(value: Date | string | null | undefined): Date | null {
 
 function formatDate(value: Date | string | null | undefined): string {
   const date = toDate(value);
-  return date ? date.toLocaleDateString() : "";
+  if (!date) return "";
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function formatRelativeTime(value: Date | string | null | undefined): string {
@@ -142,6 +147,36 @@ export function TeamWebhooksSettings() {
     }),
     enabled: deliveriesEndpointId !== null,
   });
+
+  useEffect(() => {
+    if (!deliveriesEndpointId) return;
+
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`webhook-deliveries:${deliveriesEndpointId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "webhook_deliveries",
+          filter: `webhook_endpoint_id=eq.${deliveriesEndpointId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({
+            queryKey: trpc.webhooks.deliveries.list.queryKey({
+              endpointId: deliveriesEndpointId,
+            }),
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [deliveriesEndpointId, queryClient, trpc]);
 
   useEffect(() => {
     if (!copied) return;

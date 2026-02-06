@@ -58,8 +58,9 @@ export const webhooksRouter = createTRPCRouter({
       await assertTrialNotExpired(ctx);
       await assertWebhooksEntitlement(ctx);
 
-      const secret = randomBytes(32).toString("hex");
-      const secretMasked = maskSecret(secret);
+      const rawHex = randomBytes(32).toString("hex");
+      const secret = `whsec_${rawHex}`;
+      const secretMasked = maskSecret(rawHex);
 
       const endpoint = await createWebhookEndpointWithSecret(ctx.db, {
         teamId: ctx.teamId,
@@ -71,7 +72,7 @@ export const webhooksRouter = createTRPCRouter({
 
       return {
         endpoint,
-        secret: `whsec_${secret}`,
+        secret,
       };
     }),
 
@@ -155,7 +156,7 @@ export const webhooksRouter = createTRPCRouter({
 
       await tasks.trigger("deliver-webhook", {
         webhookEndpointId: input.id,
-        messageId: "00000000-0000-0000-0000-000000000000",
+        messageId: null,
         teamId: ctx.teamId,
       });
 

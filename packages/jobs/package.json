@@ -8,8 +8,8 @@
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "lint": "biome check .",
-    "dev": "trigger dev",
-    "deploy": "trigger deploy",
+    "dev": "bunx trigger dev --env-file .env.local",
+    "deploy": "bunx trigger deploy",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit"
   },

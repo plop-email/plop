@@ -37,26 +37,42 @@ export const deliverWebhookTask = schemaTask({
       return { skipped: true };
     }
 
-    const message = await getMessageSummaryById(db, messageId);
-    if (!message) {
+    const message = messageId
+      ? await getMessageSummaryById(db, messageId)
+      : null;
+
+    if (!message && messageId) {
       logger.error("Message not found", { messageId });
       return { skipped: true };
     }
 
+    const now = new Date().toISOString();
     const webhookBody = {
       event: "email.received",
-      timestamp: new Date().toISOString(),
-      data: {
-        id: message.id,
-        mailbox: message.mailbox,
-        mailboxWithTag: message.mailboxWithTag,
-        tag: message.tag,
-        from: message.fromAddress,
-        to: message.toAddress,
-        subject: message.subject,
-        receivedAt: message.receivedAt.toISOString(),
-        domain: message.domain,
-      },
+      timestamp: now,
+      data: message
+        ? {
+            id: message.id,
+            mailbox: message.mailbox,
+            mailboxWithTag: message.mailboxWithTag,
+            tag: message.tag,
+            from: message.fromAddress,
+            to: message.toAddress,
+            subject: message.subject,
+            receivedAt: message.receivedAt.toISOString(),
+            domain: message.domain,
+          }
+        : {
+            id: "00000000-0000-0000-0000-000000000000",
+            mailbox: "test",
+            mailboxWithTag: "test+example",
+            tag: "example",
+            from: "sender@example.com",
+            to: "test+example@in.plop.email",
+            subject: "Test webhook delivery",
+            receivedAt: now,
+            domain: "in.plop.email",
+          },
     };
 
     const bodyJson = JSON.stringify(webhookBody);

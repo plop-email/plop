@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const deliverWebhookSchema = z.object({
   webhookEndpointId: z.string().uuid(),
-  messageId: z.string().uuid(),
+  messageId: z.string().uuid().nullish(),
   teamId: z.string().uuid(),
 });
 
