@@ -18,7 +18,7 @@ const tabs: { value: SnippetKey; label: string }[] = [
 
 const codeSnippets: Record<SnippetKey, string> = {
   "ts-sdk": `// TypeScript SDK — one line to wait for an email
-import { Plop } from '@plop/sdk'
+import { Plop } from '@plop-email/sdk'
 
 const plop = new Plop({ apiKey: process.env.PLOP_API_KEY })
 const msg = await plop.waitFor({

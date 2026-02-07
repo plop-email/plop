@@ -219,8 +219,23 @@ app.openapi(
 
     const mailboxDomain = settings?.domain ?? rootDomain;
 
-    const [existingByDomain] = await db
+    const [existingByTeam] = await db
       .select()
+      .from(inboxMailboxes)
+      .where(
+        and(
+          eq(inboxMailboxes.teamId, apiKey.teamId),
+          eq(inboxMailboxes.name, name),
+        ),
+      )
+      .limit(1);
+
+    if (existingByTeam) {
+      return c.json({ data: mailboxToResponse(existingByTeam) }, 201);
+    }
+
+    const [existingByDomain] = await db
+      .select({ id: inboxMailboxes.id })
       .from(inboxMailboxes)
       .where(
         and(
@@ -231,9 +246,6 @@ app.openapi(
       .limit(1);
 
     if (existingByDomain) {
-      if (existingByDomain.teamId === apiKey.teamId) {
-        return c.json({ data: mailboxToResponse(existingByDomain) }, 201);
-      }
       return c.json(
         { error: "Mailbox name already taken for this domain." },
         409,
@@ -344,8 +356,24 @@ app.openapi(
       return c.json({ data: mailboxToResponse(mailbox) }, 200);
     }
 
+    const [teamConflict] = await db
+      .select({ id: inboxMailboxes.id })
+      .from(inboxMailboxes)
+      .where(
+        and(
+          eq(inboxMailboxes.teamId, apiKey.teamId),
+          eq(inboxMailboxes.name, name),
+          ne(inboxMailboxes.id, id),
+        ),
+      )
+      .limit(1);
+
+    if (teamConflict) {
+      return c.json({ error: "Mailbox name already used in this team." }, 409);
+    }
+
     const [domainConflict] = await db
-      .select({ id: inboxMailboxes.id, teamId: inboxMailboxes.teamId })
+      .select({ id: inboxMailboxes.id })
       .from(inboxMailboxes)
       .where(
         and(
@@ -357,11 +385,10 @@ app.openapi(
       .limit(1);
 
     if (domainConflict) {
-      const errorMessage =
-        domainConflict.teamId === apiKey.teamId
-          ? "Mailbox name already used in this team."
-          : "Mailbox name already taken for this domain.";
-      return c.json({ error: errorMessage }, 409);
+      return c.json(
+        { error: "Mailbox name already taken for this domain." },
+        409,
+      );
     }
 
     const [updated] = await db

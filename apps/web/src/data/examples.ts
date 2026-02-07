@@ -531,7 +531,7 @@ class TestOrderEmails:
     language: "typescript",
     difficulty: "beginner",
     code: `import { test, expect } from '@playwright/test';
-import { Plop } from '@plop/sdk';
+import { Plop } from '@plop-email/sdk';
 
 const plop = new Plop({ apiKey: process.env.PLOP_API_KEY });
 

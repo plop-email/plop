@@ -69,7 +69,7 @@ export const integrations: Integration[] = [
     installation: {
       title: "Setup",
       code: `# Install the SDK
-npm install @plop/sdk
+npm install @plop-email/sdk
 
 # Set your API key
 export PLOP_API_KEY=your_api_key`,
@@ -78,7 +78,7 @@ export PLOP_API_KEY=your_api_key`,
       title: "Wait for an Email",
       description:
         "Initialize the client and wait for an email to arrive. One line replaces manual polling loops.",
-      code: `import { Plop } from '@plop/sdk';
+      code: `import { Plop } from '@plop-email/sdk';
 
 const plop = new Plop({ apiKey: process.env.PLOP_API_KEY });
 
@@ -100,7 +100,7 @@ const otp = message.textContent?.match(/\\b\\d{6}\\b/)?.[0];`,
       title: "List, Filter & Verify Webhooks",
       description:
         "List messages with filters and verify incoming webhook signatures.",
-      code: `import { Plop, verifyWebhookSignature } from '@plop/sdk';
+      code: `import { Plop, verifyWebhookSignature } from '@plop-email/sdk';
 
 const plop = new Plop({ apiKey: process.env.PLOP_API_KEY });
 

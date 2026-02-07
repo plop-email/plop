@@ -3,29 +3,29 @@ title: TypeScript SDK
 description: Install and use the official Plop TypeScript SDK for email testing and polling.
 ---
 
-The `@plop/sdk` package provides a typed, zero-dependency client for the Plop API. It works with Node.js 18+ and any test framework.
+The `@plop-email/plop-ts` package provides a typed, zero-dependency client for the Plop API. It works with Node.js 18+ and any test framework.
 
 ## Installation
 
 <Tabs items={['npm', 'pnpm', 'bun', 'yarn']}>
 <Tab value="npm">
 ```bash
-npm install @plop/sdk
+npm install @plop-email/plop-ts
 ```
 </Tab>
 <Tab value="pnpm">
 ```bash
-pnpm add @plop/sdk
+pnpm add @plop-email/plop-ts
 ```
 </Tab>
 <Tab value="bun">
 ```bash
-bun add @plop/sdk
+bun add @plop-email/plop-ts
 ```
 </Tab>
 <Tab value="yarn">
 ```bash
-yarn add @plop/sdk
+yarn add @plop-email/plop-ts
 ```
 </Tab>
 </Tabs>
@@ -33,7 +33,7 @@ yarn add @plop/sdk
 ## Quick start
 
 ```typescript
-import { Plop } from "@plop/sdk";
+import { Plop } from "@plop-email/plop-ts";
 
 const plop = new Plop(); // reads PLOP_API_KEY env var
 
@@ -71,7 +71,7 @@ const otp = email.textContent?.match(/\d{6}/)?.[0];
 
 ```typescript
 import { test, expect } from "@playwright/test";
-import { Plop } from "@plop/sdk";
+import { Plop } from "@plop-email/plop-ts";
 
 const plop = new Plop();
 
@@ -94,7 +94,7 @@ test("user can verify email", async ({ page }) => {
 ## Cypress example
 
 ```typescript
-import { Plop } from "@plop/sdk";
+import { Plop } from "@plop-email/plop-ts";
 
 const plop = new Plop();
 
@@ -249,6 +249,6 @@ const plop = new Plop({
 
 ## Links
 
-- [npm package](https://www.npmjs.com/package/@plop/sdk)
+- [npm package](https://www.npmjs.com/package/@plop-email/plop-ts)
 - [GitHub](https://github.com/plop-email/plop-ts)
 - [Python SDK](/python-sdk)
