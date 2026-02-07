@@ -25,7 +25,7 @@
   <img src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="License" />
-  <a href="https://www.npmjs.com/package/@plop-email/plop-ts"><img src="https://img.shields.io/npm/v/@plop-email/plop-ts?style=flat-square&label=@plop-email/plop-ts&color=B8FF2C" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/@plop-email/sdk"><img src="https://img.shields.io/npm/v/@plop-email/sdk?style=flat-square&label=@plop-email/sdk&color=B8FF2C" alt="npm" /></a>
   <a href="https://pypi.org/project/plop-sdk/"><img src="https://img.shields.io/pypi/v/plop-sdk?style=flat-square&label=plop-sdk&color=B8FF2C" alt="PyPI" /></a>
 </p>
 
@@ -87,11 +87,11 @@ Install an SDK to skip the boilerplate and get built-in polling, typed responses
 ### TypeScript
 
 ```bash
-npm install @plop-email/plop-ts
+npm install @plop-email/sdk
 ```
 
 ```typescript
-import { Plop } from "@plop-email/plop-ts";
+import { Plop } from "@plop-email/sdk";
 
 const plop = new Plop(); // reads PLOP_API_KEY env var
 
@@ -129,7 +129,7 @@ otp = re.search(r"\d{6}", email.text_content).group()
 
 | SDK | Package | GitHub |
 |-----|---------|--------|
-| TypeScript | [`@plop-email/plop-ts`](https://www.npmjs.com/package/@plop-email/plop-ts) | [plop-email/plop-ts](https://github.com/plop-email/plop-ts) |
+| TypeScript | [`@plop-email/sdk`](https://www.npmjs.com/package/@plop-email/sdk) | [plop-email/plop-ts](https://github.com/plop-email/plop-ts) |
 | Python | [`plop-sdk`](https://pypi.org/project/plop-sdk/) | [plop-email/plop-python](https://github.com/plop-email/plop-python) |
 
 ---
@@ -207,7 +207,7 @@ console.log(data.htmlContent) // HTML body
 **Using the SDK (recommended)**
 
 ```typescript
-import { Plop } from "@plop-email/plop-ts";
+import { Plop } from "@plop-email/sdk";
 
 const plop = new Plop();
 
