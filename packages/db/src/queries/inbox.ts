@@ -1,5 +1,17 @@
 import type { SQL } from "drizzle-orm";
-import { and, desc, eq, gte, ilike, inArray, lt, lte, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  ilike,
+  inArray,
+  lt,
+  lte,
+  or,
+} from "drizzle-orm";
 import type { Database } from "../client";
 import { inboxMailboxes, inboxMessages } from "../schema";
 
@@ -95,13 +107,18 @@ export async function listInboxMailboxes(
     .orderBy(desc(inboxMailboxes.updatedAt), inboxMailboxes.name);
 }
 
+export type ListInboxMessagesResult =
+  | {
+      rows: Awaited<ReturnType<typeof selectMessages>>;
+      hasMore: boolean;
+      staleCursor?: never;
+    }
+  | { staleCursor: true; rows?: never; hasMore?: never };
+
 export async function listInboxMessages(
   db: Database,
   filters: InboxMessageFilters,
-): Promise<{
-  rows: Awaited<ReturnType<typeof selectMessages>>;
-  hasMore: boolean;
-}> {
+): Promise<ListInboxMessagesResult> {
   const { limit: _limit, afterId: _afterId, ...rest } = filters;
   const conditions = buildMessageConditions(rest);
 
@@ -120,17 +137,19 @@ export async function listInboxMessages(
       )
       .limit(1);
 
-    if (cursor) {
-      const cursorCondition = or(
-        lt(inboxMessages.receivedAt, cursor.receivedAt),
-        and(
-          eq(inboxMessages.receivedAt, cursor.receivedAt),
-          lt(inboxMessages.id, cursor.id),
-        ),
-      );
-      if (cursorCondition) {
-        conditions.push(cursorCondition);
-      }
+    if (!cursor) {
+      return { staleCursor: true };
+    }
+
+    const cursorCondition = or(
+      lt(inboxMessages.receivedAt, cursor.receivedAt),
+      and(
+        eq(inboxMessages.receivedAt, cursor.receivedAt),
+        lt(inboxMessages.id, cursor.id),
+      ),
+    );
+    if (cursorCondition) {
+      conditions.push(cursorCondition);
     }
   }
 
@@ -230,6 +249,56 @@ export async function getInboxMessageById(
     .limit(1);
 
   return message ?? null;
+}
+
+// ─── Stream polling (batch fetch with cursor) ──────────────────
+
+export type StreamMessageCursor = {
+  receivedAt: Date;
+  id: string;
+};
+
+/**
+ * Fetch all messages newer than the cursor, ordered ascending (oldest-first)
+ * so the stream emits in chronological order without dropping any.
+ */
+export async function listNewInboxMessages(
+  db: Database,
+  filters: Omit<InboxMessageFilters, "limit" | "afterId">,
+  cursor: StreamMessageCursor | null,
+  limit: number,
+) {
+  const conditions = buildMessageConditions(filters);
+
+  if (cursor) {
+    const cursorCondition = or(
+      gt(inboxMessages.receivedAt, cursor.receivedAt),
+      and(
+        eq(inboxMessages.receivedAt, cursor.receivedAt),
+        gt(inboxMessages.id, cursor.id),
+      ),
+    );
+    if (cursorCondition) {
+      conditions.push(cursorCondition);
+    }
+  }
+
+  return db
+    .select({
+      id: inboxMessages.id,
+      mailboxId: inboxMessages.mailboxId,
+      mailbox: inboxMessages.mailbox,
+      mailboxWithTag: inboxMessages.mailboxWithTag,
+      tag: inboxMessages.tag,
+      from: inboxMessages.fromAddress,
+      to: inboxMessages.toAddress,
+      subject: inboxMessages.subject,
+      receivedAt: inboxMessages.receivedAt,
+    })
+    .from(inboxMessages)
+    .where(and(...conditions))
+    .orderBy(asc(inboxMessages.receivedAt), asc(inboxMessages.id))
+    .limit(limit);
 }
 
 export async function deleteInboxMessageById(

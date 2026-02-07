@@ -142,14 +142,21 @@ app.openapi(
     const retentionStart = await getTeamRetentionStart(db, apiKey.teamId);
     const filters = parseMessageFilters(apiKey, query, retentionStart);
 
-    const { rows, hasMore } = await listInboxMessages(db, {
+    const result = await listInboxMessages(db, {
       ...filters,
       mailboxName: mailboxResult.mailbox,
       limit: query.limit ?? 50,
       afterId: query.after_id ?? null,
     });
 
-    return c.json({ data: rows, has_more: hasMore }, 200);
+    if (result.staleCursor) {
+      return c.json(
+        { error: "Cursor message not found. It may have been deleted." },
+        400,
+      );
+    }
+
+    return c.json({ data: result.rows, has_more: result.hasMore }, 200);
   },
 );
 

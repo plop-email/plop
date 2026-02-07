@@ -54,7 +54,7 @@ export const rateLimitMiddleware: MiddlewareHandler<{
     return;
   }
 
-  const result = await limiter.limit(apiKey.id);
+  const result = await limiter.limit(apiKey.teamId);
 
   c.header("X-RateLimit-Limit", String(rateLimit));
   c.header("X-RateLimit-Remaining", String(result.remaining));

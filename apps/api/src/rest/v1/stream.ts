@@ -1,5 +1,8 @@
 import { db } from "@plop/db/client";
-import { getLatestInboxMessage } from "@plop/db/queries";
+import {
+  listNewInboxMessages,
+  type StreamMessageCursor,
+} from "@plop/db/queries";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { getTeamRetentionStart } from "../../utils/retention";
@@ -10,6 +13,8 @@ import {
   parseMailboxName,
   resolveMailboxScope,
 } from "./utils";
+
+const POLL_BATCH_LIMIT = 100;
 
 const app = new Hono<{ Variables: { apiKey: ApiKeyContext } }>();
 
@@ -41,9 +46,22 @@ app.get("/stream", async (c) => {
       ? retentionStart
       : since;
 
+  const filters = {
+    teamId: apiKey.teamId,
+    mailboxName: resolvedMailbox,
+    tag,
+    tags: [] as string[],
+    q: null,
+    to: null,
+    from: null,
+    subject: null,
+    start: null,
+    end: null,
+    since: effectiveSince ?? new Date(),
+  };
+
   return streamSSE(c, async (stream) => {
-    let lastSeenId: string | null = null;
-    let sinceTime = effectiveSince ?? new Date();
+    let cursor: StreamMessageCursor | null = null;
 
     await stream.writeSSE({
       event: "connected",
@@ -54,23 +72,15 @@ app.get("/stream", async (c) => {
     let pingCounter = 0;
 
     while (!abortSignal.aborted) {
-      const message = await getLatestInboxMessage(db, {
-        teamId: apiKey.teamId,
-        mailboxName: resolvedMailbox,
-        tag,
-        tags: [],
-        q: null,
-        to: null,
-        from: null,
-        subject: null,
-        start: null,
-        end: null,
-        since: sinceTime,
-      });
+      const messages = await listNewInboxMessages(
+        db,
+        filters,
+        cursor,
+        POLL_BATCH_LIMIT,
+      );
 
-      if (message && message.id !== lastSeenId) {
-        lastSeenId = message.id;
-        sinceTime = new Date(message.receivedAt);
+      for (const message of messages) {
+        cursor = { receivedAt: message.receivedAt, id: message.id };
         await stream.writeSSE({
           event: "message.received",
           data: JSON.stringify({
