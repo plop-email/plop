@@ -200,6 +200,21 @@ export const messageQuerySchema = z.object({
       description: "Filter by subject (partial match).",
       example: "Login token",
     }),
+  after_id: z
+    .string()
+    .uuid()
+    .optional()
+    .openapi({
+      param: {
+        name: "after_id",
+        in: "query",
+        description:
+          "Cursor: return messages older than this message ID (keyset pagination).",
+      },
+      description:
+        "Cursor: return messages older than this message ID (keyset pagination).",
+      example: "7d19c3e2-5e2a-4c83-8e41-5201f97b7e5e",
+    }),
 });
 
 export const messageSummarySchema = z
@@ -249,6 +264,9 @@ export const messageDetailSchema = messageSummarySchema
 export const messagesResponseSchema = z
   .object({
     data: z.array(messageSummarySchema),
+    has_more: z.boolean().openapi({
+      description: "Whether more messages exist beyond this page.",
+    }),
   })
   .openapi("MessagesResponse");
 
@@ -273,3 +291,201 @@ export const messageIdParamsSchema = z.object({
       example: "7d19c3e2-5e2a-4c83-8e41-5201f97b7e5e",
     }),
 });
+
+// --- Webhook schemas ---
+
+export const webhookEndpointSchema = z
+  .object({
+    id: z.string().uuid(),
+    url: z.string().url(),
+    description: z.string().nullable(),
+    secretMasked: z.string(),
+    events: z.array(z.string()),
+    active: z.boolean(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+  })
+  .openapi("WebhookEndpoint");
+
+export const webhookCreateBodySchema = z
+  .object({
+    url: z
+      .string()
+      .url()
+      .refine((u) => u.startsWith("https://"), {
+        message: "Webhook URL must use HTTPS.",
+      }),
+    description: z.string().trim().max(200).optional(),
+  })
+  .openapi("WebhookCreateBody");
+
+export const webhookToggleBodySchema = z
+  .object({
+    active: z.boolean(),
+  })
+  .openapi("WebhookToggleBody");
+
+export const webhookDeliverySchema = z
+  .object({
+    id: z.string().uuid(),
+    event: z.string(),
+    messageId: z.string().uuid().nullable(),
+    status: z.string(),
+    httpStatus: z.number().nullable(),
+    responseBody: z.string().nullable(),
+    latencyMs: z.number().nullable(),
+    attempt: z.number(),
+    error: z.string().nullable(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi("WebhookDelivery");
+
+export const webhooksResponseSchema = z
+  .object({ data: z.array(webhookEndpointSchema) })
+  .openapi("WebhooksResponse");
+
+export const webhookCreatedResponseSchema = z
+  .object({
+    data: z.object({ endpoint: webhookEndpointSchema, secret: z.string() }),
+  })
+  .openapi("WebhookCreatedResponse");
+
+export const webhookDeliveriesResponseSchema = z
+  .object({ data: z.array(webhookDeliverySchema) })
+  .openapi("WebhookDeliveriesResponse");
+
+export const webhookIdParamsSchema = z.object({
+  id: z
+    .string()
+    .uuid()
+    .openapi({
+      param: {
+        name: "id",
+        in: "path",
+        description: "Webhook endpoint identifier",
+        required: true,
+      },
+    }),
+});
+
+export const webhookDeletedResponseSchema = z
+  .object({
+    data: z.object({
+      id: z.string().uuid(),
+    }),
+  })
+  .openapi("WebhookDeletedResponse");
+
+export const webhookToggledResponseSchema = z
+  .object({
+    data: z.object({
+      id: z.string().uuid(),
+      active: z.boolean(),
+    }),
+  })
+  .openapi("WebhookToggledResponse");
+
+export const webhookDeliveriesQuerySchema = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .openapi({
+      param: {
+        name: "limit",
+        in: "query",
+        description: "Maximum number of deliveries to return (1-100).",
+      },
+    }),
+  offset: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .openapi({
+      param: {
+        name: "offset",
+        in: "query",
+        description: "Number of deliveries to skip.",
+      },
+    }),
+});
+
+// --- Mailbox write schemas ---
+
+const mailboxNameField = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/i, {
+    message:
+      "Mailbox names may contain letters, numbers, dot, dash, underscore.",
+  })
+  .transform((v) => v.toLowerCase());
+
+export const mailboxCreateBodySchema = z
+  .object({ name: mailboxNameField })
+  .openapi("MailboxCreateBody");
+
+export const mailboxUpdateBodySchema = z
+  .object({ name: mailboxNameField })
+  .openapi("MailboxUpdateBody");
+
+export const mailboxIdParamsSchema = z.object({
+  id: z
+    .string()
+    .uuid()
+    .openapi({
+      param: {
+        name: "id",
+        in: "path",
+        description: "Mailbox identifier",
+        required: true,
+      },
+    }),
+});
+
+export const mailboxResponseSchema = z
+  .object({
+    data: mailboxSchema,
+  })
+  .openapi("MailboxResponse");
+
+export const mailboxDeleteResponseSchema = z
+  .object({
+    data: z.object({
+      id: z.string().uuid(),
+    }),
+  })
+  .openapi("MailboxDeleteResponse");
+
+export const messageDeleteResponseSchema = z
+  .object({
+    data: z.object({
+      id: z.string().uuid(),
+    }),
+  })
+  .openapi("MessageDeleteResponse");
+
+// --- API Key schemas ---
+
+export const apiKeyRotateResponseSchema = z
+  .object({
+    data: z.object({
+      key: z.string().openapi({
+        description: "New plaintext API key — store securely, shown only once.",
+      }),
+      apiKey: z.object({
+        id: z.string().uuid(),
+        name: z.string(),
+        keyMasked: z.string(),
+        scopes: z.array(z.string()),
+        mailboxName: z.string().nullable(),
+        expiresAt: z.string().datetime().nullable(),
+      }),
+    }),
+  })
+  .openapi("ApiKeyRotateResponse");

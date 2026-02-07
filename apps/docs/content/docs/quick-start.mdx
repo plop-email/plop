@@ -153,6 +153,10 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 </Tab>
 </Tabs>
 
+<Callout>
+**Using an SDK?** The official [TypeScript SDK](/typescript-sdk) and [Python SDK](/python-sdk) handle polling and error handling for you — no manual `fetch` or `waitForTimeout` needed.
+</Callout>
+
 ## 3. Key Concepts
 
 ### Unique Test Addresses
@@ -187,6 +191,10 @@ async function waitForEmail(to: string, timeout = 10000) {
   throw new Error(`No email received for ${to}`);
 }
 ```
+
+<Callout>
+**Tip:** The official SDKs handle polling automatically with `plop.messages.waitFor()` (TypeScript) or `plop.messages.wait_for()` (Python). See [TypeScript SDK](/typescript-sdk) or [Python SDK](/python-sdk).
+</Callout>
 
 ### Extract Links and Tokens
 

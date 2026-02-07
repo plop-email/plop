@@ -25,6 +25,8 @@
   <img src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="License" />
+  <a href="https://www.npmjs.com/package/@plop-email/plop-ts"><img src="https://img.shields.io/npm/v/@plop-email/plop-ts?style=flat-square&label=@plop-email/plop-ts&color=B8FF2C" alt="npm" /></a>
+  <a href="https://pypi.org/project/plop-sdk/"><img src="https://img.shields.io/pypi/v/plop-sdk?style=flat-square&label=plop-sdk&color=B8FF2C" alt="PyPI" /></a>
 </p>
 
 ---
@@ -75,6 +77,60 @@ That's it. Email arrives, you fetch it as JSON, your test passes.
 - Simple REST API - just `fetch()` with an API key
 - OpenAPI documentation with interactive Scalar UI
 - Comprehensive filtering by mailbox, tag, date range, and search query
+
+---
+
+## Official SDKs
+
+Install an SDK to skip the boilerplate and get built-in polling, typed responses, and error handling.
+
+### TypeScript
+
+```bash
+npm install @plop-email/plop-ts
+```
+
+```typescript
+import { Plop } from "@plop-email/plop-ts";
+
+const plop = new Plop(); // reads PLOP_API_KEY env var
+
+// Wait for a verification email (polls automatically)
+const email = await plop.messages.waitFor(
+  { mailbox: "qa", tag: "verification" },
+  { timeout: 30_000 },
+);
+
+const otp = email.textContent?.match(/\d{6}/)?.[0];
+```
+
+### Python
+
+```bash
+pip install plop-sdk
+```
+
+```python
+from plop_sdk import Plop
+
+plop = Plop()  # reads PLOP_API_KEY env var
+
+email = plop.messages.wait_for(
+    mailbox="qa", tag="verification", timeout=30,
+)
+
+import re
+otp = re.search(r"\d{6}", email.text_content).group()
+```
+
+> **Zero runtime dependencies** (TypeScript) · **httpx + pydantic** (Python) · Works with Playwright, Cypress, pytest, and any test framework.
+>
+> Full API coverage: mailbox CRUD, message deletion, SSE streaming, webhook management, API key rotation, and cursor pagination.
+
+| SDK | Package | GitHub |
+|-----|---------|--------|
+| TypeScript | [`@plop-email/plop-ts`](https://www.npmjs.com/package/@plop-email/plop-ts) | [plop-email/plop-ts](https://github.com/plop-email/plop-ts) |
+| Python | [`plop-sdk`](https://pypi.org/project/plop-sdk/) | [plop-email/plop-python](https://github.com/plop-email/plop-python) |
 
 ---
 
@@ -146,6 +202,24 @@ const { data } = await response.json()
 console.log(data.subject)     // "Reset your password"
 console.log(data.textContent) // Plain text body
 console.log(data.htmlContent) // HTML body
+```
+
+**Using the SDK (recommended)**
+
+```typescript
+import { Plop } from "@plop-email/plop-ts";
+
+const plop = new Plop();
+
+// One line — handles polling, timeout, and error handling
+const email = await plop.messages.waitFor(
+  { mailbox: "qa", tag: "password-reset" },
+  { timeout: 30_000 },
+);
+
+console.log(email.subject);     // "Reset your password"
+console.log(email.textContent); // Plain text body
+console.log(email.htmlContent); // HTML body
 ```
 
 ---
@@ -369,6 +443,8 @@ This project is licensed under the **[AGPL-3.0](https://opensource.org/licenses/
 - **Dashboard**: [app.plop.email](https://app.plop.email)
 - **Documentation**: [docs.plop.email](https://docs.plop.email)
 - **API**: [api.plop.email](https://api.plop.email)
+- **TypeScript SDK**: [github.com/plop-email/plop-ts](https://github.com/plop-email/plop-ts)
+- **Python SDK**: [github.com/plop-email/plop-python](https://github.com/plop-email/plop-python)
 - **Twitter**: [@vahaah](https://twitter.com/vahaah)
 
 ---

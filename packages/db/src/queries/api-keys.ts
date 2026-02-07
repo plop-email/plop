@@ -126,6 +126,38 @@ export async function createApiKeyWithSecret(
   });
 }
 
+export async function rotateApiKey(
+  db: Database,
+  params: { id: string; newKeyHash: string; newKeyMasked: string },
+) {
+  return db.transaction(async (tx) => {
+    const [updatedSecret] = await tx
+      .update(apiKeySecrets)
+      .set({ keyHash: params.newKeyHash })
+      .where(eq(apiKeySecrets.apiKeyId, params.id))
+      .returning({ id: apiKeySecrets.id });
+
+    if (!updatedSecret) {
+      return null;
+    }
+
+    const [updatedKey] = await tx
+      .update(apiKeys)
+      .set({ keyMasked: params.newKeyMasked, lastUsedAt: null })
+      .where(eq(apiKeys.id, params.id))
+      .returning({
+        id: apiKeys.id,
+        name: apiKeys.name,
+        keyMasked: apiKeys.keyMasked,
+        scopes: apiKeys.scopes,
+        mailboxName: apiKeys.mailboxName,
+        expiresAt: apiKeys.expiresAt,
+      });
+
+    return updatedKey ?? null;
+  });
+}
+
 export async function deleteApiKeyById(
   db: Database,
   params: { id: string; teamId: string },

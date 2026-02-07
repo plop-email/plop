@@ -1,0 +1,214 @@
+---
+title: Python SDK
+description: Install and use the official Plop Python SDK for email testing and polling.
+---
+
+The `plop-sdk` package provides sync and async clients for the Plop API. It uses `httpx` for HTTP and `pydantic` for typed responses.
+
+## Installation
+
+```bash
+pip install plop-sdk
+```
+
+## Quick start
+
+```python
+from plop_sdk import Plop
+
+plop = Plop()  # reads PLOP_API_KEY env var
+
+# List mailboxes
+mailboxes = plop.mailboxes.list()
+
+# Fetch latest message
+latest = plop.messages.latest(mailbox="qa", tag="signup")
+print(latest.subject)
+print(latest.text_content)
+```
+
+## Wait for an email
+
+The `wait_for` method polls the API until a matching message arrives or the timeout expires:
+
+```python
+email = plop.messages.wait_for(
+    mailbox="qa",
+    tag="verification",
+    timeout=30,       # seconds
+    interval=1.0,     # poll interval
+)
+
+import re
+otp = re.search(r"\d{6}", email.text_content).group()
+```
+
+Raises `PlopTimeoutError` if no match is found within the timeout.
+
+## pytest example
+
+```python
+import pytest
+from plop_sdk import Plop
+
+@pytest.fixture
+def plop():
+    return Plop()
+
+def test_welcome_email(plop):
+    # trigger your app to send the email, then:
+    email = plop.messages.wait_for(
+        mailbox="qa",
+        tag="welcome",
+        timeout=30,
+    )
+
+    assert "Welcome" in email.subject
+    assert "Get Started" in email.html_content
+```
+
+## Async client
+
+```python
+import asyncio
+from plop_sdk import AsyncPlop
+
+async def main():
+    async with AsyncPlop() as plop:
+        email = await plop.messages.wait_for(
+            mailbox="qa", tag="login",
+        )
+        print(email.subject)
+
+asyncio.run(main())
+```
+
+## List and filter messages
+
+```python
+messages = plop.messages.list(
+    mailbox="qa",
+    tag="login",
+    since="2026-01-01T00:00:00Z",
+    limit=10,
+)
+
+for msg in messages:
+    print(f"{msg.from_address}: {msg.subject}")
+```
+
+## Get a message by ID
+
+```python
+message = plop.messages.get("uuid-here")
+print(message.html_content)
+```
+
+## Verify webhook signatures
+
+```python
+is_valid = plop.webhooks.verify(
+    secret="whsec_...",
+    signature=request.headers["x-plop-signature"],
+    body=raw_body,
+)
+```
+
+## Manage mailboxes
+
+```python
+mailbox = plop.mailboxes.create(name="staging")
+plop.mailboxes.update(mailbox.id, name="staging-v2")
+plop.mailboxes.delete(mailbox.id)
+```
+
+## Delete a message
+
+```python
+result = plop.messages.delete("uuid-here")
+```
+
+## Stream messages (SSE)
+
+```python
+for message in plop.messages.stream(mailbox="qa"):
+    print(f"New: {message.subject} from {message.from_address}")
+```
+
+## Manage webhooks
+
+```python
+created = plop.webhooks.create(url="https://example.com/webhook")
+print(created.secret)  # shown once
+
+endpoints = plop.webhooks.list()
+plop.webhooks.toggle(endpoints[0].id, active=False)
+```
+
+## Rotate API key
+
+```python
+result = plop.api_keys.rotate()
+print(result.key)  # new key — update your env
+```
+
+## Error handling
+
+Methods raise typed exceptions:
+
+```python
+from plop_sdk import Plop, PlopAuthError, PlopNotFoundError
+
+plop = Plop()
+
+try:
+    message = plop.messages.get("nonexistent-id")
+except PlopNotFoundError:
+    print("Message not found")
+except PlopAuthError:
+    print("Invalid API key")
+```
+
+| Exception | HTTP Status |
+|-----------|-------------|
+| `PlopAuthError` | 401 |
+| `PlopForbiddenError` | 403 |
+| `PlopNotFoundError` | 404 |
+| `PlopTimeoutError` | — (polling timeout) |
+
+## Configuration
+
+```python
+plop = Plop(
+    api_key="plop_...",                      # or set PLOP_API_KEY env var
+    base_url="https://api.plop.email",       # default
+)
+```
+
+## API reference
+
+| Method | Description |
+|--------|-------------|
+| `plop.mailboxes.list(**params)` | List mailboxes |
+| `plop.messages.list(**params)` | List messages with filters |
+| `plop.messages.get(id)` | Get message by ID |
+| `plop.messages.latest(**params)` | Get most recent matching message |
+| `plop.messages.wait_for(**params)` | Poll until a message arrives |
+| `plop.mailboxes.create(name=...)` | Create a mailbox |
+| `plop.mailboxes.update(id, name=...)` | Rename a mailbox |
+| `plop.mailboxes.delete(id)` | Delete a mailbox |
+| `plop.messages.delete(id)` | Delete a message |
+| `plop.messages.stream(**params)` | Stream new messages (SSE) |
+| `plop.webhooks.list()` | List webhook endpoints |
+| `plop.webhooks.create(url=...)` | Create a webhook endpoint |
+| `plop.webhooks.delete(id)` | Delete a webhook endpoint |
+| `plop.webhooks.toggle(id, active=...)` | Enable/disable a webhook |
+| `plop.webhooks.deliveries(id)` | List webhook deliveries |
+| `plop.webhooks.verify(**opts)` | Verify webhook HMAC signature |
+| `plop.api_keys.rotate()` | Rotate the current API key |
+
+## Links
+
+- [PyPI package](https://pypi.org/project/plop-sdk/)
+- [GitHub](https://github.com/plop-email/plop-python)
+- [TypeScript SDK](/typescript-sdk)

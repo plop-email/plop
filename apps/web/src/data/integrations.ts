@@ -33,6 +33,220 @@ export interface Integration {
 
 export const integrations: Integration[] = [
   {
+    slug: "typescript-sdk",
+    name: "TypeScript SDK",
+    description:
+      "Official TypeScript SDK for Plop with built-in polling, typed responses, and zero runtime dependencies.",
+    metaDescription:
+      "Official TypeScript SDK for plop.email. Built-in polling with waitFor(), typed responses, and zero runtime dependencies.",
+    icon: "FileCode",
+    category: "language",
+    heroTitle: "TypeScript SDK for plop.email",
+    heroDescription:
+      "The official TypeScript SDK with built-in polling, typed responses, and zero runtime dependencies. One line to wait for emails.",
+    features: [
+      {
+        title: "Built-in Polling",
+        description:
+          "Use waitFor() to poll for emails with configurable timeout and interval. No manual retry loops.",
+      },
+      {
+        title: "Typed Responses",
+        description:
+          "Full TypeScript types for all API responses. Autocomplete for message fields, filters, and options.",
+      },
+      {
+        title: "Zero Dependencies",
+        description:
+          "No runtime dependencies. Uses native fetch under the hood. Works in Node.js, Bun, and Deno.",
+      },
+      {
+        title: "Webhook Verification",
+        description:
+          "Built-in webhook signature verification with verifyWebhookSignature() for secure integrations.",
+      },
+    ],
+    installation: {
+      title: "Setup",
+      code: `# Install the SDK
+npm install @plop-email/sdk
+
+# Set your API key
+export PLOP_API_KEY=your_api_key`,
+    },
+    quickStart: {
+      title: "Wait for an Email",
+      description:
+        "Initialize the client and wait for an email to arrive. One line replaces manual polling loops.",
+      code: `import { Plop } from '@plop-email/sdk';
+
+const plop = new Plop({ apiKey: process.env.PLOP_API_KEY });
+
+// Wait for the latest email (polls automatically)
+const message = await plop.waitFor({
+  mailbox: 'qa',
+  tag: 'signup',
+  timeout: 10_000,
+});
+
+// Typed response — full autocomplete
+console.log(message.subject);
+console.log(message.textContent);
+
+// Extract OTP from email body
+const otp = message.textContent?.match(/\\b\\d{6}\\b/)?.[0];`,
+    },
+    advancedExample: {
+      title: "List, Filter & Verify Webhooks",
+      description:
+        "List messages with filters and verify incoming webhook signatures.",
+      code: `import { Plop, verifyWebhookSignature } from '@plop-email/sdk';
+
+const plop = new Plop({ apiKey: process.env.PLOP_API_KEY });
+
+// List messages with filters
+const messages = await plop.messages.list({
+  mailbox: 'qa',
+  tag: 'password-reset',
+  limit: 5,
+});
+
+for (const msg of messages.data) {
+  console.log(\`\${msg.subject} — \${msg.from}\`);
+}
+
+// Verify webhook signature
+const isValid = verifyWebhookSignature({
+  payload: requestBody,
+  signature: headers['x-plop-signature'],
+  secret: process.env.PLOP_WEBHOOK_SECRET!,
+});`,
+    },
+    tips: [
+      "Use waitFor() instead of manual polling loops — it handles retries and timeout",
+      "Set PLOP_API_KEY as an environment variable to avoid hardcoding secrets",
+      "Use the tag parameter to isolate emails per test for parallel execution",
+      "The SDK works with any test framework — Playwright, Cypress, Jest, Vitest",
+      "Use plop.messages.stream() for real-time SSE notifications instead of polling",
+      "Manage webhooks programmatically with plop.webhooks.create(), .delete(), .toggle()",
+    ],
+    relatedIntegrations: ["python-sdk", "playwright", "cypress"],
+    relatedUseCases: ["e2e-testing", "transactional-emails"],
+    docsUrl: "https://docs.plop.email/sdks/typescript",
+  },
+  {
+    slug: "python-sdk",
+    name: "Python SDK",
+    description:
+      "Official Python SDK for Plop with sync/async clients, Pydantic models, and built-in polling.",
+    metaDescription:
+      "Official Python SDK for plop.email. Sync and async clients, Pydantic models, and built-in polling with wait_for().",
+    icon: "Terminal",
+    category: "language",
+    heroTitle: "Python SDK for plop.email",
+    heroDescription:
+      "The official Python SDK with sync and async clients, Pydantic models, and built-in polling. One line to wait for emails.",
+    features: [
+      {
+        title: "Sync & Async Clients",
+        description:
+          "Use Plop() for synchronous code or AsyncPlop() for async/await. Both share the same API surface.",
+      },
+      {
+        title: "Built-in Polling",
+        description:
+          "Use wait_for() to poll for emails with configurable timeout and interval. No manual retry loops.",
+      },
+      {
+        title: "Pydantic Models",
+        description:
+          "All responses are typed Pydantic models with full IDE autocomplete and validation.",
+      },
+      {
+        title: "pytest Ready",
+        description:
+          "Drop-in pytest fixture included. One decorator to inject a plop client into any test.",
+      },
+    ],
+    installation: {
+      title: "Setup",
+      code: `# Install the SDK
+pip install plop-sdk
+
+# Set your API key
+export PLOP_API_KEY=your_api_key`,
+    },
+    quickStart: {
+      title: "Wait for an Email",
+      description:
+        "Initialize the client and wait for an email to arrive. One line replaces manual polling loops.",
+      code: `from plop import Plop
+
+client = Plop(api_key="your_api_key")
+
+# Wait for the latest email (polls automatically)
+message = client.wait_for(
+    mailbox="qa",
+    tag="signup",
+    timeout=10.0,
+)
+
+# Pydantic model — full autocomplete
+print(message.subject)
+print(message.text_content)
+
+# Extract OTP from email body
+import re
+otp = re.search(r"\\b\\d{6}\\b", message.text_content or "")`,
+    },
+    advancedExample: {
+      title: "Async Client & pytest Fixture",
+      description:
+        "Use the async client for high-throughput scenarios and the built-in pytest fixture for testing.",
+      code: `import pytest
+from plop import AsyncPlop
+
+# Async client for concurrent operations
+async def check_emails():
+    async with AsyncPlop(api_key="your_api_key") as client:
+        messages = await client.messages.list(
+            mailbox="qa",
+            tag="password-reset",
+            limit=5,
+        )
+        for msg in messages.data:
+            print(f"{msg.subject} — {msg.sender}")
+
+
+# pytest fixture — inject plop into any test
+@pytest.fixture
+def plop_client():
+    return Plop(api_key=os.environ["PLOP_API_KEY"])
+
+
+def test_welcome_email(plop_client):
+    # Trigger your app to send an email...
+    msg = plop_client.wait_for(
+        mailbox="qa",
+        tag="welcome",
+        timeout=10.0,
+    )
+    assert "Welcome" in msg.subject
+    assert "Get Started" in msg.text_content`,
+    },
+    tips: [
+      "Use wait_for() instead of time.sleep() loops — it handles retries and timeout",
+      "Use AsyncPlop for FastAPI, aiohttp, or any async Python framework",
+      "Set PLOP_API_KEY as an environment variable to avoid hardcoding secrets",
+      "Use the tag parameter to isolate emails per test for parallel execution",
+      "Use plop.messages.stream() for real-time SSE notifications instead of polling",
+      "Manage webhooks, mailboxes, and API keys with full CRUD methods",
+    ],
+    relatedIntegrations: ["typescript-sdk", "playwright", "cypress"],
+    relatedUseCases: ["e2e-testing", "transactional-emails"],
+    docsUrl: "https://docs.plop.email/sdks/python",
+  },
+  {
     slug: "playwright",
     name: "Playwright",
     description: "E2E testing with Microsoft Playwright",
@@ -1167,15 +1381,17 @@ it('receives password reset email', async () => {
 ];
 
 export function getIntegration(slug: string): Integration | undefined {
-  return integrations.find((i) => i.slug === slug);
+  return integrations.find((integration) => integration.slug === slug);
 }
 
 export function getRelatedIntegrations(slugs: string[]): Integration[] {
-  return integrations.filter((i) => slugs.includes(i.slug));
+  return integrations.filter((integration) => slugs.includes(integration.slug));
 }
 
 export function getIntegrationsByCategory(
   category: Integration["category"],
 ): Integration[] {
-  return integrations.filter((i) => i.category === category);
+  return integrations.filter(
+    (integration) => integration.category === category,
+  );
 }

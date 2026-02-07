@@ -1,21 +1,25 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { db } from "@plop/db/client";
 import {
+  deleteInboxMessageById,
   getInboxMessageById,
   getLatestInboxMessage,
   listInboxMessages,
 } from "@plop/db/queries";
+import type { z } from "zod";
 import { getTeamRetentionStart } from "../../utils/retention";
 import type { ApiKeyContext } from "./auth";
 import {
   errorResponseSchema,
+  messageDeleteResponseSchema,
   messageIdParamsSchema,
   messageQuerySchema,
   messageResponseSchema,
   messagesResponseSchema,
 } from "./schemas";
 import {
-  ensureEmailScope,
+  hasApiFullScope,
+  hasEmailScope,
   normalizeDateRange,
   parseCsv,
   parseDate,
@@ -25,25 +29,59 @@ import {
 
 const app = new OpenAPIHono<{ Variables: { apiKey: ApiKeyContext } }>();
 
+// ─── Shared query-parsing helpers ───────────────────────────────
+
 type MailboxResolution =
   | { mailbox: string | null }
   | { error: "Invalid mailbox" | "Forbidden" };
 
-function getResolvedMailbox(
+function resolveMailbox(
   apiKey: ApiKeyContext,
   mailbox: string | undefined,
 ): MailboxResolution {
   const mailboxParam = parseMailboxName(mailbox);
   if (mailbox && !mailboxParam) {
-    return { error: "Invalid mailbox" } as const;
+    return { error: "Invalid mailbox" };
   }
 
   try {
-    return { mailbox: resolveMailboxScope(apiKey, mailboxParam) } as const;
+    return { mailbox: resolveMailboxScope(apiKey, mailboxParam) };
   } catch {
-    return { error: "Forbidden" } as const;
+    return { error: "Forbidden" };
   }
 }
+
+type ParsedQuery = z.infer<typeof messageQuerySchema>;
+
+function parseMessageFilters(
+  apiKey: ApiKeyContext,
+  query: ParsedQuery,
+  retentionStart: Date | null,
+) {
+  const tags = parseCsv(query.tags).map((v) => v.toLowerCase());
+  const tag = query.tag?.trim().toLowerCase() ?? null;
+  const { start, end } = normalizeDateRange(query.start, query.end);
+  const since = parseDate(query.since);
+  const effectiveSince =
+    retentionStart && (!since || since < retentionStart)
+      ? retentionStart
+      : since;
+
+  return {
+    teamId: apiKey.teamId,
+    tag,
+    tags,
+    q: query.q?.trim() ?? null,
+    to: query.to?.trim() ?? null,
+    from: query.from?.trim() ?? null,
+    subject: query.subject?.trim() ?? null,
+    start,
+    end,
+    since: effectiveSince,
+  };
+}
+
+// ─── Routes ─────────────────────────────────────────────────────
 
 app.openapi(
   createRoute({
@@ -89,50 +127,36 @@ app.openapi(
   }),
   async (c) => {
     const apiKey = c.get("apiKey");
-    try {
-      ensureEmailScope(apiKey.scopes);
-    } catch {
+    if (!hasEmailScope(apiKey.scopes)) {
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const parsedQuery = c.req.valid("query");
+    const query = c.req.valid("query");
 
-    const mailboxResult = getResolvedMailbox(apiKey, parsedQuery.mailbox);
+    const mailboxResult = resolveMailbox(apiKey, query.mailbox);
     if ("error" in mailboxResult) {
       const status = mailboxResult.error === "Invalid mailbox" ? 400 : 403;
       return c.json({ error: mailboxResult.error }, status);
     }
 
-    const tags = parseCsv(parsedQuery.tags).map((value) => value.toLowerCase());
-    const tag = parsedQuery.tag?.trim().toLowerCase() ?? null;
-    const { start, end } = normalizeDateRange(
-      parsedQuery.start,
-      parsedQuery.end,
-    );
-    const since = parseDate(parsedQuery.since);
-    const limit = parsedQuery.limit ?? 50;
     const retentionStart = await getTeamRetentionStart(db, apiKey.teamId);
-    const effectiveSince =
-      retentionStart && (!since || since < retentionStart)
-        ? retentionStart
-        : since;
+    const filters = parseMessageFilters(apiKey, query, retentionStart);
 
-    const rows = await listInboxMessages(db, {
-      teamId: apiKey.teamId,
+    const result = await listInboxMessages(db, {
+      ...filters,
       mailboxName: mailboxResult.mailbox,
-      tag,
-      tags,
-      q: parsedQuery.q?.trim() ?? null,
-      to: parsedQuery.to?.trim() ?? null,
-      from: parsedQuery.from?.trim() ?? null,
-      subject: parsedQuery.subject?.trim() ?? null,
-      start,
-      end,
-      since: effectiveSince,
-      limit,
+      limit: query.limit ?? 50,
+      afterId: query.after_id ?? null,
     });
 
-    return c.json({ data: rows }, 200);
+    if (result.staleCursor) {
+      return c.json(
+        { error: "Cursor message not found. It may have been deleted." },
+        400,
+      );
+    }
+
+    return c.json({ data: result.rows, has_more: result.hasMore }, 200);
   },
 );
 
@@ -186,45 +210,24 @@ app.openapi(
   }),
   async (c) => {
     const apiKey = c.get("apiKey");
-    try {
-      ensureEmailScope(apiKey.scopes);
-    } catch {
+    if (!hasEmailScope(apiKey.scopes)) {
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const parsedQuery = c.req.valid("query");
+    const query = c.req.valid("query");
 
-    const mailboxResult = getResolvedMailbox(apiKey, parsedQuery.mailbox);
+    const mailboxResult = resolveMailbox(apiKey, query.mailbox);
     if ("error" in mailboxResult) {
       const status = mailboxResult.error === "Invalid mailbox" ? 400 : 403;
       return c.json({ error: mailboxResult.error }, status);
     }
 
-    const tags = parseCsv(parsedQuery.tags).map((value) => value.toLowerCase());
-    const tag = parsedQuery.tag?.trim().toLowerCase() ?? null;
-    const { start, end } = normalizeDateRange(
-      parsedQuery.start,
-      parsedQuery.end,
-    );
-    const since = parseDate(parsedQuery.since);
     const retentionStart = await getTeamRetentionStart(db, apiKey.teamId);
-    const effectiveSince =
-      retentionStart && (!since || since < retentionStart)
-        ? retentionStart
-        : since;
+    const filters = parseMessageFilters(apiKey, query, retentionStart);
 
     const message = await getLatestInboxMessage(db, {
-      teamId: apiKey.teamId,
+      ...filters,
       mailboxName: mailboxResult.mailbox,
-      tag,
-      tags,
-      q: parsedQuery.q?.trim() ?? null,
-      to: parsedQuery.to?.trim() ?? null,
-      from: parsedQuery.from?.trim() ?? null,
-      subject: parsedQuery.subject?.trim() ?? null,
-      start,
-      end,
-      since: effectiveSince,
     });
 
     if (!message) {
@@ -285,9 +288,7 @@ app.openapi(
   }),
   async (c) => {
     const apiKey = c.get("apiKey");
-    try {
-      ensureEmailScope(apiKey.scopes);
-    } catch {
+    if (!hasEmailScope(apiKey.scopes)) {
       return c.json({ error: "Forbidden" }, 403);
     }
 
@@ -312,6 +313,75 @@ app.openapi(
     }
 
     return c.json({ data: message }, 200);
+  },
+);
+
+app.openapi(
+  createRoute({
+    method: "delete",
+    path: "/{id}",
+    summary: "Delete message",
+    operationId: "deleteMessage",
+    description:
+      "Permanently delete a message by ID. This action cannot be undone. Required scope: api.full.",
+    tags: ["Messages"],
+    security: [{ token: [] }],
+    request: {
+      params: messageIdParamsSchema,
+    },
+    responses: {
+      200: {
+        description: "Message deleted.",
+        content: {
+          "application/json": { schema: messageDeleteResponseSchema },
+        },
+      },
+      401: {
+        description: "Missing or invalid API key.",
+        content: {
+          "application/json": { schema: errorResponseSchema },
+        },
+      },
+      403: {
+        description: "API key lacks required scope.",
+        content: {
+          "application/json": { schema: errorResponseSchema },
+        },
+      },
+      404: {
+        description: "Message not found.",
+        content: {
+          "application/json": { schema: errorResponseSchema },
+        },
+      },
+    },
+  }),
+  async (c) => {
+    const apiKey = c.get("apiKey");
+    if (!hasApiFullScope(apiKey.scopes)) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+
+    const { id } = c.req.valid("param");
+
+    let resolvedMailbox: string | null = null;
+    try {
+      resolvedMailbox = resolveMailboxScope(apiKey, null);
+    } catch {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+
+    const deleted = await deleteInboxMessageById(db, {
+      teamId: apiKey.teamId,
+      id,
+      mailboxName: resolvedMailbox,
+    });
+
+    if (!deleted) {
+      return c.json({ error: "Not found" }, 404);
+    }
+
+    return c.json({ data: { id: deleted.id } }, 200);
   },
 );
 

@@ -1,5 +1,17 @@
 import type { SQL } from "drizzle-orm";
-import { and, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  ilike,
+  inArray,
+  lt,
+  lte,
+  or,
+} from "drizzle-orm";
 import type { Database } from "../client";
 import { inboxMailboxes, inboxMessages } from "../schema";
 
@@ -16,6 +28,7 @@ export type InboxMessageFilters = {
   end: Date | null;
   since: Date | null;
   limit: number;
+  afterId?: string | null;
 };
 
 function buildMessageConditions(params: Omit<InboxMessageFilters, "limit">) {
@@ -94,13 +107,64 @@ export async function listInboxMailboxes(
     .orderBy(desc(inboxMailboxes.updatedAt), inboxMailboxes.name);
 }
 
+export type ListInboxMessagesResult =
+  | {
+      rows: Awaited<ReturnType<typeof selectMessages>>;
+      hasMore: boolean;
+      staleCursor?: never;
+    }
+  | { staleCursor: true; rows?: never; hasMore?: never };
+
 export async function listInboxMessages(
   db: Database,
   filters: InboxMessageFilters,
-) {
-  const { limit: _limit, ...rest } = filters;
+): Promise<ListInboxMessagesResult> {
+  const { limit: _limit, afterId: _afterId, ...rest } = filters;
   const conditions = buildMessageConditions(rest);
 
+  if (filters.afterId) {
+    const [cursor] = await db
+      .select({
+        receivedAt: inboxMessages.receivedAt,
+        id: inboxMessages.id,
+      })
+      .from(inboxMessages)
+      .where(
+        and(
+          eq(inboxMessages.teamId, filters.teamId),
+          eq(inboxMessages.id, filters.afterId),
+        ),
+      )
+      .limit(1);
+
+    if (!cursor) {
+      return { staleCursor: true };
+    }
+
+    const cursorCondition = or(
+      lt(inboxMessages.receivedAt, cursor.receivedAt),
+      and(
+        eq(inboxMessages.receivedAt, cursor.receivedAt),
+        lt(inboxMessages.id, cursor.id),
+      ),
+    );
+    if (cursorCondition) {
+      conditions.push(cursorCondition);
+    }
+  }
+
+  const fetched = await selectMessages(db, conditions, filters.limit + 1);
+  const hasMore = fetched.length > filters.limit;
+  const rows = hasMore ? fetched.slice(0, filters.limit) : fetched;
+
+  return { rows, hasMore };
+}
+
+function selectMessages(
+  db: Database,
+  conditions: SQL<unknown>[],
+  limit: number,
+) {
   return db
     .select({
       id: inboxMessages.id,
@@ -115,8 +179,8 @@ export async function listInboxMessages(
     })
     .from(inboxMessages)
     .where(and(...conditions))
-    .orderBy(desc(inboxMessages.receivedAt))
-    .limit(filters.limit);
+    .orderBy(desc(inboxMessages.receivedAt), desc(inboxMessages.id))
+    .limit(limit);
 }
 
 export async function getLatestInboxMessage(
@@ -185,4 +249,75 @@ export async function getInboxMessageById(
     .limit(1);
 
   return message ?? null;
+}
+
+// ─── Stream polling (batch fetch with cursor) ──────────────────
+
+export type StreamMessageCursor = {
+  receivedAt: Date;
+  id: string;
+};
+
+/**
+ * Fetch all messages newer than the cursor, ordered ascending (oldest-first)
+ * so the stream emits in chronological order without dropping any.
+ */
+export async function listNewInboxMessages(
+  db: Database,
+  filters: Omit<InboxMessageFilters, "limit" | "afterId">,
+  cursor: StreamMessageCursor | null,
+  limit: number,
+) {
+  const conditions = buildMessageConditions(filters);
+
+  if (cursor) {
+    const cursorCondition = or(
+      gt(inboxMessages.receivedAt, cursor.receivedAt),
+      and(
+        eq(inboxMessages.receivedAt, cursor.receivedAt),
+        gt(inboxMessages.id, cursor.id),
+      ),
+    );
+    if (cursorCondition) {
+      conditions.push(cursorCondition);
+    }
+  }
+
+  return db
+    .select({
+      id: inboxMessages.id,
+      mailboxId: inboxMessages.mailboxId,
+      mailbox: inboxMessages.mailbox,
+      mailboxWithTag: inboxMessages.mailboxWithTag,
+      tag: inboxMessages.tag,
+      from: inboxMessages.fromAddress,
+      to: inboxMessages.toAddress,
+      subject: inboxMessages.subject,
+      receivedAt: inboxMessages.receivedAt,
+    })
+    .from(inboxMessages)
+    .where(and(...conditions))
+    .orderBy(asc(inboxMessages.receivedAt), asc(inboxMessages.id))
+    .limit(limit);
+}
+
+export async function deleteInboxMessageById(
+  db: Database,
+  params: { teamId: string; id: string; mailboxName: string | null },
+) {
+  const conditions: SQL<unknown>[] = [
+    eq(inboxMessages.teamId, params.teamId),
+    eq(inboxMessages.id, params.id),
+  ];
+
+  if (params.mailboxName) {
+    conditions.push(eq(inboxMessages.mailbox, params.mailboxName));
+  }
+
+  const [deleted] = await db
+    .delete(inboxMessages)
+    .where(and(...conditions))
+    .returning({ id: inboxMessages.id });
+
+  return deleted ?? null;
 }

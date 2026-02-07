@@ -1,6 +1,13 @@
-import { Key, Mail, Terminal } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Code, Key, Mail, Terminal } from "lucide-react";
 
-const features = [
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+const features: Feature[] = [
   {
     icon: Mail,
     title: "Mailboxes + tags",
@@ -17,9 +24,15 @@ const features = [
     title: "Scoped API keys",
     description: "Full access, email-only, or mailbox-scoped keys.",
   },
+  {
+    icon: Code,
+    title: "Official SDKs",
+    description:
+      "TypeScript and Python SDKs with built-in polling. One line to wait for emails.",
+  },
 ];
 
-export function FeatureGrid() {
+export function FeatureGrid(): React.JSX.Element {
   return (
     <section className="border-b border-white/12">
       <div className="mx-auto max-w-[1120px] px-6 lg:px-8 py-20 sm:py-24">
@@ -31,7 +44,7 @@ export function FeatureGrid() {
             Everything you need to test email flows in CI.
           </p>
         </div>
-        <div className="grid sm:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature) => (
             <div
               key={feature.title}
