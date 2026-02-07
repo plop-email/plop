@@ -1,5 +1,65 @@
+import { DEFAULT_PLAN_TIER, type PlanTier } from "@plop/billing";
+import { db } from "@plop/db/client";
+import { teams } from "@plop/db/schema";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { ApiKeyContext } from "./auth";
+
+// ─── Team plan lookup ───────────────────────────────────────────
+
+export async function getTeamPlan(teamId: string): Promise<PlanTier> {
+  const [team] = await db
+    .select({ plan: teams.plan })
+    .from(teams)
+    .where(eq(teams.id, teamId))
+    .limit(1);
+
+  return (team?.plan as PlanTier) ?? DEFAULT_PLAN_TIER;
+}
+
+// ─── Scope checks ───────────────────────────────────────────────
+
+function hasScope(scopes: string[], value: string): boolean {
+  return scopes.includes(value);
+}
+
+export function hasEmailScope(scopes: string[]): boolean {
+  return (
+    hasScope(scopes, "api.full") ||
+    hasScope(scopes, "email.full") ||
+    hasScope(scopes, "email.mailbox")
+  );
+}
+
+export function hasApiFullScope(scopes: string[]): boolean {
+  return hasScope(scopes, "api.full");
+}
+
+export function resolveMailboxScope(
+  apiKey: ApiKeyContext,
+  requestedMailbox: string | null,
+): string | null {
+  if (
+    hasScope(apiKey.scopes, "api.full") ||
+    hasScope(apiKey.scopes, "email.full")
+  ) {
+    return requestedMailbox;
+  }
+
+  if (hasScope(apiKey.scopes, "email.mailbox")) {
+    if (!apiKey.mailboxName) {
+      throw new Error("FORBIDDEN_MAILBOX_SCOPE");
+    }
+    if (requestedMailbox && requestedMailbox !== apiKey.mailboxName) {
+      throw new Error("FORBIDDEN_MAILBOX_SCOPE");
+    }
+    return apiKey.mailboxName;
+  }
+
+  return requestedMailbox;
+}
+
+// ─── Parsing helpers ────────────────────────────────────────────
 
 const mailboxNameSchema = z
   .string()
@@ -42,7 +102,7 @@ export function parseDate(value: string | undefined): Date | null {
 export function normalizeDateRange(
   start: string | undefined,
   end: string | undefined,
-) {
+): { start: Date | null; end: Date | null } {
   const startDate = start ? new Date(`${start}T00:00:00.000Z`) : null;
   const endDate = end ? new Date(`${end}T23:59:59.999Z`) : null;
 
@@ -55,39 +115,4 @@ export function normalizeDateRange(
   }
 
   return { start: validStart, end: validEnd };
-}
-
-function hasScope(scopes: string[], value: string) {
-  return scopes.includes(value);
-}
-
-export function ensureEmailScope(scopes: string[]) {
-  if (hasScope(scopes, "api.full")) return;
-  if (hasScope(scopes, "email.full")) return;
-  if (hasScope(scopes, "email.mailbox")) return;
-  throw new Error("FORBIDDEN_SCOPE");
-}
-
-export function resolveMailboxScope(
-  apiKey: ApiKeyContext,
-  requestedMailbox: string | null,
-) {
-  if (
-    hasScope(apiKey.scopes, "api.full") ||
-    hasScope(apiKey.scopes, "email.full")
-  ) {
-    return requestedMailbox;
-  }
-
-  if (hasScope(apiKey.scopes, "email.mailbox")) {
-    if (!apiKey.mailboxName) {
-      throw new Error("FORBIDDEN_MAILBOX_SCOPE");
-    }
-    if (requestedMailbox && requestedMailbox !== apiKey.mailboxName) {
-      throw new Error("FORBIDDEN_MAILBOX_SCOPE");
-    }
-    return apiKey.mailboxName;
-  }
-
-  return requestedMailbox;
 }

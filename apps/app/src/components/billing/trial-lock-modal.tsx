@@ -1,13 +1,12 @@
 "use client";
 
 import {
-  type PlanTier,
-  PLAN_CATALOG,
   formatUsd,
+  getAvailablePlans,
   getPriceForCycle,
   isTrialExpired,
+  type PlanTier,
   TRIAL_DAYS,
-  getAvailablePlans,
 } from "@plop/billing";
 import { Button } from "@plop/ui/button";
 import {
@@ -102,8 +101,6 @@ export function TrialLockModal() {
               const isSelected = selectedPlan === planDef.tier;
               const isDisabled =
                 planDef.tier === "starter" && !canChooseStarter;
-              const isHighlighted = !!planDef.badge;
-
               return (
                 <Card
                   key={planDef.tier}

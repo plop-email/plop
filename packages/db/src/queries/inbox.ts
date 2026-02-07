@@ -1,5 +1,5 @@
 import type { SQL } from "drizzle-orm";
-import { and, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, lt, lte, or } from "drizzle-orm";
 import type { Database } from "../client";
 import { inboxMailboxes, inboxMessages } from "../schema";
 
@@ -16,6 +16,7 @@ export type InboxMessageFilters = {
   end: Date | null;
   since: Date | null;
   limit: number;
+  afterId?: string | null;
 };
 
 function buildMessageConditions(params: Omit<InboxMessageFilters, "limit">) {
@@ -97,10 +98,54 @@ export async function listInboxMailboxes(
 export async function listInboxMessages(
   db: Database,
   filters: InboxMessageFilters,
-) {
-  const { limit: _limit, ...rest } = filters;
+): Promise<{
+  rows: Awaited<ReturnType<typeof selectMessages>>;
+  hasMore: boolean;
+}> {
+  const { limit: _limit, afterId: _afterId, ...rest } = filters;
   const conditions = buildMessageConditions(rest);
 
+  if (filters.afterId) {
+    const [cursor] = await db
+      .select({
+        receivedAt: inboxMessages.receivedAt,
+        id: inboxMessages.id,
+      })
+      .from(inboxMessages)
+      .where(
+        and(
+          eq(inboxMessages.teamId, filters.teamId),
+          eq(inboxMessages.id, filters.afterId),
+        ),
+      )
+      .limit(1);
+
+    if (cursor) {
+      const cursorCondition = or(
+        lt(inboxMessages.receivedAt, cursor.receivedAt),
+        and(
+          eq(inboxMessages.receivedAt, cursor.receivedAt),
+          lt(inboxMessages.id, cursor.id),
+        ),
+      );
+      if (cursorCondition) {
+        conditions.push(cursorCondition);
+      }
+    }
+  }
+
+  const fetched = await selectMessages(db, conditions, filters.limit + 1);
+  const hasMore = fetched.length > filters.limit;
+  const rows = hasMore ? fetched.slice(0, filters.limit) : fetched;
+
+  return { rows, hasMore };
+}
+
+function selectMessages(
+  db: Database,
+  conditions: SQL<unknown>[],
+  limit: number,
+) {
   return db
     .select({
       id: inboxMessages.id,
@@ -115,8 +160,8 @@ export async function listInboxMessages(
     })
     .from(inboxMessages)
     .where(and(...conditions))
-    .orderBy(desc(inboxMessages.receivedAt))
-    .limit(filters.limit);
+    .orderBy(desc(inboxMessages.receivedAt), desc(inboxMessages.id))
+    .limit(limit);
 }
 
 export async function getLatestInboxMessage(
@@ -185,4 +230,25 @@ export async function getInboxMessageById(
     .limit(1);
 
   return message ?? null;
+}
+
+export async function deleteInboxMessageById(
+  db: Database,
+  params: { teamId: string; id: string; mailboxName: string | null },
+) {
+  const conditions: SQL<unknown>[] = [
+    eq(inboxMessages.teamId, params.teamId),
+    eq(inboxMessages.id, params.id),
+  ];
+
+  if (params.mailboxName) {
+    conditions.push(eq(inboxMessages.mailbox, params.mailboxName));
+  }
+
+  const [deleted] = await db
+    .delete(inboxMessages)
+    .where(and(...conditions))
+    .returning({ id: inboxMessages.id });
+
+  return deleted ?? null;
 }

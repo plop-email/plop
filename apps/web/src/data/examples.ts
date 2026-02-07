@@ -519,6 +519,227 @@ class TestOrderEmails:
     relatedIntegrations: ["pytest"],
   },
   {
+    slug: "typescript-sdk-playwright-e2e",
+    title: "TypeScript SDK + Playwright E2E Test",
+    description:
+      "Test OTP verification with Plop TypeScript SDK and Playwright",
+    metaDescription:
+      "Playwright E2E test using the official Plop TypeScript SDK. Replace manual polling with waitFor() for OTP verification.",
+    icon: "FileCode",
+    category: "e2e",
+    framework: "Playwright",
+    language: "typescript",
+    difficulty: "beginner",
+    code: `import { test, expect } from '@playwright/test';
+import { Plop } from '@plop/sdk';
+
+const plop = new Plop({ apiKey: process.env.PLOP_API_KEY });
+
+test.describe('OTP Verification', () => {
+  test('login with OTP code', async ({ page }) => {
+    const tag = \`otp-\${Date.now()}\`;
+    const testEmail = \`qa+\${tag}@in.plop.email\`;
+
+    // Start login flow
+    await page.goto('/login');
+    await page.fill('[name="email"]', testEmail);
+    await page.click('button[type="submit"]');
+
+    // Wait for OTP email — replaces manual polling
+    const message = await plop.waitFor({
+      mailbox: 'qa',
+      tag,
+      timeout: 15_000,
+    });
+
+    // Extract 6-digit OTP code
+    const otp = message.textContent?.match(/\\b\\d{6}\\b/)?.[0];
+    expect(otp).toBeTruthy();
+
+    // Enter OTP and verify login
+    await page.fill('[data-testid="otp-input"]', otp!);
+    await page.click('button[type="submit"]');
+    await expect(page.locator('text=Dashboard')).toBeVisible();
+  });
+
+  test('magic link authentication', async ({ page }) => {
+    const tag = \`magic-\${Date.now()}\`;
+    const testEmail = \`qa+\${tag}@in.plop.email\`;
+
+    // Request magic link
+    await page.goto('/login');
+    await page.fill('[name="email"]', testEmail);
+    await page.click('text=Send Magic Link');
+
+    // Wait for magic link email
+    const message = await plop.waitFor({
+      mailbox: 'qa',
+      tag,
+      timeout: 15_000,
+    });
+
+    // Extract and navigate to magic link
+    const linkMatch = message.htmlContent?.match(/href="([^"]*magic[^"]*)"/);
+    expect(linkMatch).toBeTruthy();
+
+    await page.goto(linkMatch![1]);
+    await expect(page.locator('text=Dashboard')).toBeVisible();
+  });
+});`,
+    explanation: [
+      {
+        title: "SDK vs Raw API",
+        content:
+          "The Plop SDK replaces manual fetch + polling loops with a single waitFor() call. No need to write retry logic or handle HTTP headers.",
+      },
+      {
+        title: "Tag-based Isolation",
+        content:
+          "Each test uses a unique tag with Date.now() so tests can run in parallel without interfering with each other.",
+      },
+      {
+        title: "Typed Responses",
+        content:
+          "The SDK returns typed Message objects with autocomplete for subject, textContent, htmlContent, and other fields.",
+      },
+      {
+        title: "Timeout Handling",
+        content:
+          "waitFor() throws a clear error if the email does not arrive within the timeout, making test failures easy to diagnose.",
+      },
+    ],
+    relatedExamples: [
+      "python-sdk-pytest",
+      "playwright-signup-test",
+      "cypress-password-reset",
+    ],
+    relatedUseCases: ["e2e-testing", "magic-links"],
+    relatedIntegrations: ["typescript-sdk", "playwright"],
+  },
+  {
+    slug: "python-sdk-pytest",
+    title: "Python SDK + pytest",
+    description: "Test email flows with Plop Python SDK and pytest fixtures",
+    metaDescription:
+      "pytest example using the official Plop Python SDK. Use wait_for() as a pytest fixture for simple email assertions.",
+    icon: "Terminal",
+    category: "integration",
+    framework: "pytest",
+    language: "python",
+    difficulty: "beginner",
+    code: `# tests/conftest.py
+import pytest
+import os
+import time
+from plop import Plop
+
+@pytest.fixture
+def plop_client():
+    """Provide a configured Plop client for tests."""
+    return Plop(api_key=os.environ["PLOP_API_KEY"])
+
+@pytest.fixture
+def test_email():
+    """Generate unique test email addresses."""
+    def _generate(prefix: str = "test"):
+        tag = f"{prefix}-{int(time.time() * 1000)}"
+        return f"qa+{tag}@in.plop.email", "qa", tag
+    return _generate
+
+
+# tests/test_auth_emails.py
+import pytest
+
+class TestAuthEmails:
+    def test_welcome_email(self, plop_client, test_email):
+        """Welcome email should arrive with correct content."""
+        email, mailbox, tag = test_email("welcome")
+
+        # Trigger your app to send a welcome email
+        create_user(email=email, name="Test User")
+
+        # Wait for email — replaces time.sleep() + requests loop
+        msg = plop_client.wait_for(
+            mailbox=mailbox,
+            tag=tag,
+            timeout=10.0,
+        )
+
+        assert "Welcome" in msg.subject
+        assert "Test User" in msg.text_content
+        assert "Get Started" in msg.html_content
+
+    def test_password_reset_email(self, plop_client, test_email):
+        """Password reset should include a valid reset link."""
+        email, mailbox, tag = test_email("reset")
+
+        request_password_reset(email=email)
+
+        msg = plop_client.wait_for(
+            mailbox=mailbox,
+            tag=tag,
+            timeout=10.0,
+        )
+
+        assert "Reset" in msg.subject
+        assert "reset" in msg.html_content.lower()
+
+        # Extract and validate reset link
+        import re
+        link = re.search(r'href="([^"]*reset[^"]*)"', msg.html_content)
+        assert link is not None
+
+    @pytest.mark.parametrize("locale,expected_subject", [
+        ("en", "Welcome"),
+        ("es", "Bienvenido"),
+        ("fr", "Bienvenue"),
+    ])
+    def test_localized_welcome(
+        self, plop_client, test_email, locale, expected_subject
+    ):
+        """Welcome email should be localized."""
+        email, mailbox, tag = test_email(f"locale-{locale}")
+
+        create_user(email=email, name="Test", locale=locale)
+
+        msg = plop_client.wait_for(
+            mailbox=mailbox,
+            tag=tag,
+            timeout=10.0,
+        )
+
+        assert expected_subject in msg.subject`,
+    explanation: [
+      {
+        title: "pytest Fixture",
+        content:
+          "The plop_client fixture provides a configured SDK client. The test_email fixture generates unique addresses with mailbox and tag separated for easy use with wait_for().",
+      },
+      {
+        title: "wait_for() vs time.sleep()",
+        content:
+          "The SDK's wait_for() replaces the common pattern of time.sleep(2) + requests.get() with retry. It polls automatically and raises a clear TimeoutError if the email never arrives.",
+      },
+      {
+        title: "Pydantic Models",
+        content:
+          "The returned message object is a Pydantic model with typed fields like subject, text_content, and html_content. IDEs provide full autocomplete.",
+      },
+      {
+        title: "Parametrized Tests",
+        content:
+          "The localization test uses @pytest.mark.parametrize to verify email templates across multiple languages with the same test logic.",
+      },
+    ],
+    relatedExamples: [
+      "typescript-sdk-playwright-e2e",
+      "pytest-transactional",
+      "jest-email-service",
+    ],
+    relatedUseCases: ["transactional-emails", "ci-cd-pipelines"],
+    relatedIntegrations: ["python-sdk", "pytest"],
+  },
+  {
     slug: "github-actions-email-test",
     title: "GitHub Actions Email Testing",
     description: "CI/CD workflow for email testing with GitHub Actions",
@@ -652,15 +873,15 @@ jobs:
 ];
 
 export function getExample(slug: string): CodeExample | undefined {
-  return examples.find((e) => e.slug === slug);
+  return examples.find((example) => example.slug === slug);
 }
 
 export function getExamplesByCategory(
   category: CodeExample["category"],
 ): CodeExample[] {
-  return examples.filter((e) => e.category === category);
+  return examples.filter((example) => example.category === category);
 }
 
 export function getRelatedExamples(slugs: string[]): CodeExample[] {
-  return examples.filter((e) => slugs.includes(e.slug));
+  return examples.filter((example) => slugs.includes(example.slug));
 }

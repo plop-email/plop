@@ -1,0 +1,123 @@
+---
+title: "TypeScript and Python SDKs are here"
+summary: "Stop writing polling loops. One line to wait for emails in your tests — with full type safety."
+publishedAt: "2026-02-06"
+tag: "Product"
+image: "/images/sdks.png"
+---
+
+Testing email flows just got a lot simpler. We're releasing official SDKs for **TypeScript** and **Python** — designed to replace the boilerplate of polling loops, manual `fetch` calls, and untyped JSON parsing.
+
+## The problem with raw API calls
+
+Every team using Plop for E2E tests ends up writing the same helper:
+
+```typescript
+// Every project has a version of this
+async function waitForEmail(to, timeout = 10000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const res = await fetch(`https://api.plop.email/v1/messages/latest?to=${to}`, {
+      headers: { Authorization: `Bearer ${process.env.PLOP_API_KEY}` },
+    });
+    if (res.ok) return (await res.json()).data;
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  throw new Error("Timeout");
+}
+```
+
+It works, but it's repetitive, untyped, and easy to get wrong (error handling, timeout edge cases, race conditions with `since` timestamps).
+
+## One line instead
+
+### TypeScript
+
+```bash
+npm install @plop/sdk
+```
+
+```typescript
+import { Plop } from "@plop/sdk";
+
+const plop = new Plop(); // reads PLOP_API_KEY from env
+
+const email = await plop.messages.waitFor(
+  { mailbox: "qa", tag: "verification" },
+  { timeout: 30_000 },
+);
+
+const otp = email.textContent?.match(/\d{6}/)?.[0];
+```
+
+That's it. `waitFor` polls the API, handles 404s, respects the timeout, and returns a fully typed `MessageDetail` object. If nothing arrives, it throws a `PlopError`.
+
+### Python
+
+```bash
+pip install plop-sdk
+```
+
+```python
+from plop_sdk import Plop
+
+plop = Plop()  # reads PLOP_API_KEY from env
+
+email = plop.messages.wait_for(
+    mailbox="qa",
+    tag="verification",
+    timeout=30,
+)
+
+import re
+otp = re.search(r"\d{6}", email.text_content).group()
+```
+
+Sync and async clients included. `AsyncPlop` works with `pytest-asyncio` and `async with` context managers.
+
+## What's included
+
+Both SDKs cover the full Plop API:
+
+| Feature | TypeScript | Python |
+|---------|-----------|--------|
+| List mailboxes | `plop.mailboxes.list()` | `plop.mailboxes.list()` |
+| List/filter messages | `plop.messages.list({...})` | `plop.messages.list(...)` |
+| Get message by ID | `plop.messages.get(id)` | `plop.messages.get(id)` |
+| Get latest match | `plop.messages.latest({...})` | `plop.messages.latest(...)` |
+| **Poll for email** | `plop.messages.waitFor(...)` | `plop.messages.wait_for(...)` |
+| Verify webhooks | `plop.webhooks.verify(...)` | `plop.webhooks.verify(...)` |
+| Create/update/delete mailboxes | `plop.mailboxes.create(...)` | `plop.mailboxes.create(...)` |
+| Delete messages | `plop.messages.delete(id)` | `plop.messages.delete(id)` |
+| **Stream messages (SSE)** | `plop.messages.stream(...)` | `plop.messages.stream(...)` |
+| Manage webhooks | `plop.webhooks.create(...)` | `plop.webhooks.create(...)` |
+| List webhook deliveries | `plop.webhooks.deliveries(id)` | `plop.webhooks.deliveries(id)` |
+| **Rotate API key** | `plop.apiKeys.rotate()` | `plop.api_keys.rotate()` |
+| Cursor pagination | `after_id` + `has_more` | `after_id` + `has_more` |
+
+## Design decisions
+
+**Zero runtime dependencies** (TypeScript) — uses native `fetch` and `crypto`. No axios, no node-fetch. Works everywhere Node 18+ runs.
+
+**httpx + Pydantic** (Python) — sync and async HTTP with typed Pydantic models. Every response field has a proper Python type.
+
+**`{data, error}` pattern** (TypeScript) — inspired by Resend. Methods never throw; you destructure the result. Exception: `waitFor` throws on timeout since it's typically used in test contexts where throwing is natural.
+
+**Typed exceptions** (Python) — `PlopAuthError`, `PlopForbiddenError`, `PlopNotFoundError`, `PlopTimeoutError`. Catch exactly what you need.
+
+## Get started
+
+```bash
+# TypeScript
+npm install @plop/sdk
+
+# Python
+pip install plop-sdk
+```
+
+Set your `PLOP_API_KEY` environment variable and you're ready. Both SDKs auto-detect the key from the environment.
+
+- [TypeScript SDK docs](https://docs.plop.email/typescript-sdk)
+- [Python SDK docs](https://docs.plop.email/python-sdk)
+- [GitHub: plop-ts](https://github.com/plop-email/plop-ts)
+- [GitHub: plop-python](https://github.com/plop-email/plop-python)

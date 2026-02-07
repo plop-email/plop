@@ -1,0 +1,254 @@
+---
+title: TypeScript SDK
+description: Install and use the official Plop TypeScript SDK for email testing and polling.
+---
+
+The `@plop/sdk` package provides a typed, zero-dependency client for the Plop API. It works with Node.js 18+ and any test framework.
+
+## Installation
+
+<Tabs items={['npm', 'pnpm', 'bun', 'yarn']}>
+<Tab value="npm">
+```bash
+npm install @plop/sdk
+```
+</Tab>
+<Tab value="pnpm">
+```bash
+pnpm add @plop/sdk
+```
+</Tab>
+<Tab value="bun">
+```bash
+bun add @plop/sdk
+```
+</Tab>
+<Tab value="yarn">
+```bash
+yarn add @plop/sdk
+```
+</Tab>
+</Tabs>
+
+## Quick start
+
+```typescript
+import { Plop } from "@plop/sdk";
+
+const plop = new Plop(); // reads PLOP_API_KEY env var
+
+// List mailboxes
+const { data: mailboxes } = await plop.mailboxes.list();
+
+// Fetch latest message matching filters
+const { data: email } = await plop.messages.latest({
+  mailbox: "qa",
+  tag: "signup",
+});
+
+console.log(email.subject);      // "Verify your email"
+console.log(email.textContent);  // plain text body
+```
+
+## Wait for an email
+
+The `waitFor` method polls the API until a matching message arrives or the timeout expires. This is the recommended pattern for E2E tests:
+
+```typescript
+// Polls GET /v1/messages/latest every second until a match or 30s timeout
+const email = await plop.messages.waitFor(
+  { mailbox: "qa", tag: "verification" },
+  { timeout: 30_000, interval: 1_000 },
+);
+
+// Extract OTP
+const otp = email.textContent?.match(/\d{6}/)?.[0];
+```
+
+`waitFor` throws a `PlopError` with message `"Timeout waiting for message"` if no match is found within the timeout.
+
+## Playwright example
+
+```typescript
+import { test, expect } from "@playwright/test";
+import { Plop } from "@plop/sdk";
+
+const plop = new Plop();
+
+test("user can verify email", async ({ page }) => {
+  await page.goto("/signup");
+  await page.fill('[name="email"]', "qa+verify@in.plop.email");
+  await page.click('button[type="submit"]');
+
+  const email = await plop.messages.waitFor(
+    { mailbox: "qa", tag: "verify" },
+    { timeout: 30_000 },
+  );
+
+  const otp = email.textContent?.match(/\d{6}/)?.[0];
+  await page.fill('[name="otp"]', otp!);
+  await expect(page.locator('[data-testid="success"]')).toBeVisible();
+});
+```
+
+## Cypress example
+
+```typescript
+import { Plop } from "@plop/sdk";
+
+const plop = new Plop();
+
+Cypress.Commands.add("waitForEmail", (filters) => {
+  return cy.wrap(
+    plop.messages.waitFor(filters, { timeout: 30_000 }),
+  );
+});
+
+it("sends verification email", () => {
+  cy.visit("/signup");
+  cy.get('[name="email"]').type("qa+test@in.plop.email");
+  cy.get("form").submit();
+
+  cy.waitForEmail({ mailbox: "qa", tag: "test" }).then((email) => {
+    expect(email.subject).to.include("Verify");
+  });
+});
+```
+
+## List and filter messages
+
+```typescript
+const { data: messages } = await plop.messages.list({
+  mailbox: "qa",
+  tag: "login",
+  since: "2026-01-01T00:00:00Z",
+  limit: 10,
+});
+
+for (const msg of messages) {
+  console.log(`${msg.from}: ${msg.subject}`);
+}
+```
+
+## Get a message by ID
+
+```typescript
+const { data: message } = await plop.messages.get("uuid-here");
+console.log(message.htmlContent);
+```
+
+## Verify webhook signatures
+
+```typescript
+const isValid = plop.webhooks.verify({
+  secret: "whsec_...",
+  signature: req.headers["x-plop-signature"],
+  body: rawBody,
+});
+```
+
+## Manage mailboxes
+
+```typescript
+const { data: mailbox } = await plop.mailboxes.create({ name: "staging" });
+await plop.mailboxes.update(mailbox.id, { name: "staging-v2" });
+await plop.mailboxes.delete(mailbox.id);
+```
+
+## Delete a message
+
+```typescript
+const { data } = await plop.messages.delete("uuid-here");
+```
+
+## Stream messages (SSE)
+
+```typescript
+for await (const message of plop.messages.stream({ mailbox: "qa" })) {
+  console.log(`New: ${message.subject} from ${message.from}`);
+}
+```
+
+## Manage webhooks
+
+```typescript
+const { data: created } = await plop.webhooks.create({
+  url: "https://example.com/webhook",
+});
+console.log(created.secret); // shown once — store securely
+
+const { data: endpoints } = await plop.webhooks.list();
+await plop.webhooks.toggle(endpoints[0].id, false); // disable
+```
+
+## Rotate API key
+
+```typescript
+const { data } = await plop.apiKeys.rotate();
+console.log(data.key); // new key — update your env
+```
+
+## Cursor pagination
+
+```typescript
+let afterId: string | undefined;
+do {
+  const { data: page } = await plop.messages.list({
+    limit: 50,
+    after_id: afterId,
+  });
+  for (const msg of page.data) { /* process */ }
+  afterId = page.data.at(-1)?.id;
+  if (!page.has_more) break;
+} while (true);
+```
+
+## Error handling
+
+All methods return `{ data, error }`. On failure, `data` is `null` and `error` contains details:
+
+```typescript
+const { data, error } = await plop.messages.list();
+
+if (error) {
+  console.error(error.message); // "Unauthorized"
+  console.error(error.status);  // 401
+}
+```
+
+## Configuration
+
+```typescript
+const plop = new Plop({
+  apiKey: "plop_...",                    // or set PLOP_API_KEY env var
+  baseUrl: "https://api.plop.email",     // default
+});
+```
+
+## API reference
+
+| Method | Description |
+|--------|-------------|
+| `plop.mailboxes.list(params?)` | List mailboxes |
+| `plop.messages.list(params?)` | List messages with filters |
+| `plop.messages.get(id)` | Get message by ID |
+| `plop.messages.latest(params?)` | Get most recent matching message |
+| `plop.messages.waitFor(params, opts)` | Poll until a message arrives |
+| `plop.mailboxes.create({ name })` | Create a mailbox |
+| `plop.mailboxes.update(id, { name })` | Rename a mailbox |
+| `plop.mailboxes.delete(id)` | Delete a mailbox |
+| `plop.messages.delete(id)` | Delete a message |
+| `plop.messages.stream(params?)` | Stream new messages (SSE) |
+| `plop.webhooks.list()` | List webhook endpoints |
+| `plop.webhooks.create({ url })` | Create a webhook endpoint |
+| `plop.webhooks.delete(id)` | Delete a webhook endpoint |
+| `plop.webhooks.toggle(id, active)` | Enable/disable a webhook |
+| `plop.webhooks.deliveries(id)` | List webhook deliveries |
+| `plop.webhooks.verify(opts)` | Verify webhook HMAC signature |
+| `plop.apiKeys.rotate()` | Rotate the current API key |
+
+## Links
+
+- [npm package](https://www.npmjs.com/package/@plop/sdk)
+- [GitHub](https://github.com/plop-email/plop-ts)
+- [Python SDK](/python-sdk)

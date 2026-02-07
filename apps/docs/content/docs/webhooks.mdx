@@ -88,6 +88,34 @@ function verifyWebhook(
 - **Timeout**: Your endpoint must respond within **10 seconds**.
 - **Logs**: View delivery attempts, status codes, and latency in **Settings → Webhooks → Deliveries**.
 
+## Manage via API
+
+You can also manage webhooks programmatically using the REST API or SDKs.
+
+### REST API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/webhooks` | List all webhook endpoints |
+| POST | `/v1/webhooks` | Create a new endpoint |
+| DELETE | `/v1/webhooks/{id}` | Delete an endpoint |
+| PATCH | `/v1/webhooks/{id}` | Toggle active/inactive |
+| GET | `/v1/webhooks/{id}/deliveries` | List delivery attempts |
+
+All endpoints require an API key with `api.full` scope.
+
+### SDK example
+
+```typescript
+import { Plop } from "@plop/sdk";
+
+const plop = new Plop();
+const { data } = await plop.webhooks.create({
+  url: "https://example.com/webhook",
+});
+console.log(data.secret); // store this securely
+```
+
 ## Plan requirement
 
 Webhooks require the **Team** plan or higher. Starter plan users can upgrade from the billing page.
